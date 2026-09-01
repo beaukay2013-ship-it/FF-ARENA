@@ -2961,240 +2961,307 @@
 
     }
 
+/* =========================================================
+CREATE MATCH
+========================================================= */
 
-    /* =========================================================
-       CREATE MATCH
-    ========================================================= */
+function showCreateMatch() {
 
-    function showCreateMatch() {
+updateUsernameInputs();
 
-      updateUsernameInputs();
+const errorElement =
+document.getElementById("matchError");
 
-      const modal =
-        document.getElementById(
-          "matchModal"
-        );
+if (errorElement) {
+errorElement.textContent = "";
+}
 
-      const errorElement =
-        document.getElementById(
-          "matchError"
-        );
+openModal("matchModal");
 
-      if (errorElement) {
-        errorElement.textContent = "";
-      }
+}
 
-      openModal("matchModal");
+function closeCreateMatch() {
 
+closeModal("matchModal");
+
+}
+
+async function createMatch() {
+
+const nameInput =
+document.getElementById("matchName");
+
+const gameInput =
+document.getElementById("matchGame");
+
+const formatInput =
+document.getElementById("matchFormat");
+
+const creatorInputElement =
+document.getElementById("matchCreator");
+
+const coinsInput =
+document.getElementById("matchCoins");
+
+const startTimeInput =
+document.getElementById("matchStartTime");
+
+const errorElement =
+document.getElementById("matchError");
+
+if (!nameInput ||
+!gameInput ||
+!formatInput ||
+!creatorInputElement ||
+!coinsInput ||
+!startTimeInput ||
+!errorElement) {
+
+```
+console.error(
+  "One or more Create Match elements are missing."
+);
+
+alert(
+  "Create Match form error. Please check the HTML IDs."
+);
+
+return;
+```
+
+}
+
+const name =
+nameInput.value.trim();
+
+const game =
+gameInput.value.trim();
+
+const format =
+formatInput.value.trim();
+
+const creatorInput =
+creatorInputElement.value.trim();
+
+const creator =
+creatorInput || getUsername();
+
+const coinsValue =
+coinsInput.value.trim();
+
+const entryCoins =
+coinsValue === ""
+? 0
+: Number(coinsValue);
+
+const startTime =
+startTimeInput.value;
+
+errorElement.textContent = "";
+
+/* =========================
+VALIDATION
+========================= */
+
+if (!name) {
+
+```
+errorElement.textContent =
+  "Please enter a match name.";
+
+return;
+```
+
+}
+
+if (!game) {
+
+```
+errorElement.textContent =
+  "Please select a game.";
+
+return;
+```
+
+}
+
+if (!format) {
+
+```
+errorElement.textContent =
+  "Please select a match format.";
+
+return;
+```
+
+}
+
+if (!creator) {
+
+```
+errorElement.textContent =
+  "Please enter your username.";
+
+return;
+```
+
+}
+
+if (
+!Number.isFinite(entryCoins) ||
+entryCoins < 0 ||
+!Number.isInteger(entryCoins)
+) {
+
+```
+errorElement.textContent =
+  "Entry coins must be a valid whole number.";
+
+return;
+```
+
+}
+
+if (startTime) {
+
+```
+const selectedTime =
+  new Date(startTime).getTime();
+
+
+if (
+  !Number.isFinite(selectedTime) ||
+  selectedTime <= Date.now()
+) {
+
+  errorElement.textContent =
+    "Please choose a future match start time.";
+
+  return;
+
+}
+```
+
+}
+
+/* =========================
+CREATE MATCH
+========================= */
+
+try {
+
+```
+const response =
+  await fetch(
+    "/api/matches",
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type":
+          "application/json"
+      },
+
+      body: JSON.stringify({
+
+        name: name,
+
+        game: game,
+
+        gameType: game,
+
+        format: format,
+
+        creator: creator,
+
+        entryCoins: entryCoins,
+
+        startTime:
+          startTime
+            ? new Date(
+                startTime
+              ).toISOString()
+            : null
+
+      })
     }
+  );
 
 
-    function closeCreateMatch() {
+const data =
+  await response.json();
 
-      closeModal("matchModal");
 
-    }
+if (!response.ok) {
 
+  errorElement.textContent =
+    data.error ||
+    "Could not create match.";
 
-    async function createMatch() {
+  return;
 
-      const name =
-        document.getElementById(
-          "matchName"
-        ).value.trim();
+}
 
-      const game =
-        document.getElementById(
-          "matchGame"
-        ).value;
 
-      const format =
-        document.getElementById(
-          "matchFormat"
-        ).value;
+/* =========================
+   SAVE USERNAME
+========================= */
 
-      const creatorInput =
-        document.getElementById(
-          "matchCreator"
-        ).value.trim();
+if (creator) {
 
-      const creator =
-        creatorInput ||
-        getUsername();
+  playerUsername = creator;
 
-      const entryCoins =
-        Number(
-          document.getElementById(
-            "matchCoins"
-          ).value || 0
-        );
+  localStorage.setItem(
+    "ffarena_username",
+    creator
+  );
 
-      const startTime =
-        document.getElementById(
-          "matchStartTime"
-        ).value;
+}
 
-      const errorElement =
-        document.getElementById(
-          "matchError"
-        );
 
+/* =========================
+   SUCCESS
+========================= */
 
-      errorElement.textContent = "";
+closeCreateMatch();
 
 
-      if (!name) {
+nameInput.value = "";
 
-        errorElement.textContent =
-          "Please enter a match name.";
+gameInput.selectedIndex = 0;
 
-        return;
+formatInput.selectedIndex = 0;
 
-      }
+coinsInput.value = "";
 
+startTimeInput.value = "";
 
-      if (!game) {
 
-        errorElement.textContent =
-          "Please select a game.";
+if (typeof loadMatches === "function") {
 
-        return;
+  await loadMatches();
 
-      }
+}
+```
 
+}
 
-      if (!creator) {
+catch (error) {
 
-        errorElement.textContent =
-          "Please enter your username.";
+```
+console.error(
+  "Create match error:",
+  error
+);
 
-        return;
 
-      }
+errorElement.textContent =
+  "Could not connect to GamesArena server.";
+```
 
+}
 
-      if (
-        !Number.isFinite(entryCoins) ||
-        entryCoins < 0 ||
-        !Number.isInteger(entryCoins)
-      ) {
-
-        errorElement.textContent =
-          "Entry coins must be a valid whole number.";
-
-        return;
-
-      }
-
-
-      if (startTime) {
-
-        const selectedTime =
-          new Date(startTime).getTime();
-
-        if (
-          !Number.isFinite(selectedTime) ||
-          selectedTime <= Date.now()
-        ) {
-
-          errorElement.textContent =
-            "Please choose a future match start time.";
-
-          return;
-
-        }
-
-      }
-
-
-      try {
-
-        const response =
-          await fetch(
-            "/api/matches",
-            {
-              method: "POST",
-
-              headers: {
-                "Content-Type":
-                  "application/json"
-              },
-
-              body: JSON.stringify({
-
-                name,
-
-                game,
-
-                gameType: game,
-
-                format,
-
-                creator,
-
-                entryCoins,
-
-                startTime:
-                  startTime
-                    ? new Date(
-                        startTime
-                      ).toISOString()
-                    : null
-
-              })
-            }
-          );
-
-
-        const data =
-          await response.json();
-
-
-        if (!response.ok) {
-
-          errorElement.textContent =
-            data.error ||
-            "Could not create match.";
-
-          return;
-
-        }
-
-
-        closeCreateMatch();
-
-
-        document.getElementById(
-          "matchName"
-        ).value = "";
-
-        document.getElementById(
-          "matchCoins"
-        ).value = "";
-
-        document.getElementById(
-          "matchStartTime"
-        ).value = "";
-
-
-        await loadMatches();
-
-      }
-
-      catch (error) {
-
-        console.error(
-          "Create match error:",
-          error
-        );
-
-        errorElement.textContent =
-          "Could not connect to GamesArena server.";
-
-      }
-
-    }
-
+}
 
     /* =========================================================
        LOAD MATCHES
