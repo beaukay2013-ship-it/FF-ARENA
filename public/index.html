@@ -2442,1350 +2442,1623 @@
 
   <script>
 
-    /* =========================================================
-       GLOBAL STATE
-    ========================================================= */
+/* =========================================================
+   GLOBAL STATE
+========================================================= */
 
-    let currentLobbyMatchId = null;
+let currentLobbyMatchId = null;
+let currentLiveMatchId = null;
+let screenStream = null;
+let liveRefreshTimer = null;
+let chatRefreshTimer = null;
 
-    let currentLiveMatchId = null;
-
-    let screenStream = null;
-
-    let liveRefreshTimer = null;
-
-    let chatRefreshTimer = null;
-
-    let playerUsername =
-      localStorage.getItem("ffarena_username") || "";
+let playerUsername =
+  localStorage.getItem("ffarena_username") || "";
 
 
-    /* =========================================================
-       SECURITY
-    ========================================================= */
+/* =========================================================
+   SECURITY
+========================================================= */
 
-    function escapeHTML(value) {
+function escapeHTML(value) {
 
-      return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 
-    }
+}
 
 
-    /* =========================================================
-       USERNAME
-    ========================================================= */
+/* =========================================================
+   USERNAME
+========================================================= */
 
-    function getUsername() {
+function getUsername() {
 
-      if (playerUsername) {
-        return playerUsername;
-      }
+  if (playerUsername) {
+    return playerUsername;
+  }
 
-      const username =
-        prompt("Enter your GamesArena username:");
+  const username =
+    prompt("Enter your GamesArena username:");
 
-      if (!username) {
-        return null;
-      }
+  if (!username) {
+    return null;
+  }
 
-      const clean =
-        username.trim();
+  const clean =
+    username.trim();
 
-      if (!clean) {
-        return null;
-      }
+  if (!clean) {
+    return null;
+  }
 
-      playerUsername = clean;
+  playerUsername = clean;
 
-      localStorage.setItem(
-        "ffarena_username",
-        clean
+  localStorage.setItem(
+    "ffarena_username",
+    clean
+  );
+
+  updateUsernameInputs();
+
+  return clean;
+
+}
+
+
+function updateUsernameInputs() {
+
+  const chatUsername =
+    document.getElementById(
+      "chatUsername"
+    );
+
+  const matchCreator =
+    document.getElementById(
+      "matchCreator"
+    );
+
+  const teamOwner =
+    document.getElementById(
+      "teamOwner"
+    );
+
+
+  if (chatUsername) {
+    chatUsername.value =
+      playerUsername;
+  }
+
+  if (matchCreator) {
+    matchCreator.value =
+      playerUsername;
+  }
+
+  if (teamOwner) {
+    teamOwner.value =
+      playerUsername;
+  }
+
+}
+
+
+/* =========================================================
+   MODAL HELPERS
+========================================================= */
+
+function openModal(id) {
+
+  const modal =
+    document.getElementById(id);
+
+  if (!modal) {
+    return;
+  }
+
+  modal.style.display = "flex";
+
+  modal.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+
+  document.body.classList.add(
+    "modal-open"
+  );
+
+}
+
+
+function closeModal(id) {
+
+  const modal =
+    document.getElementById(id);
+
+  if (!modal) {
+    return;
+  }
+
+  modal.style.display = "none";
+
+  modal.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+
+  const openModalExists =
+    Array.from(
+      document.querySelectorAll(".modal")
+    ).some(modalElement => {
+
+      return (
+        modalElement.style.display === "flex"
       );
 
-      updateUsernameInputs();
-
-      return clean;
-
-    }
+    });
 
 
-    function updateUsernameInputs() {
+  if (!openModalExists) {
 
-      const chatUsername =
-        document.getElementById(
-          "chatUsername"
-        );
+    document.body.classList.remove(
+      "modal-open"
+    );
 
-      const matchCreator =
-        document.getElementById(
-          "matchCreator"
-        );
+  }
 
-      const teamOwner =
-        document.getElementById(
-          "teamOwner"
-        );
-
-      if (chatUsername) {
-        chatUsername.value =
-          playerUsername;
-      }
-
-      if (matchCreator) {
-        matchCreator.value =
-          playerUsername;
-      }
-
-      if (teamOwner) {
-        teamOwner.value =
-          playerUsername;
-      }
-
-    }
+}
 
 
-    /* =========================================================
-       MODAL HELPERS
-    ========================================================= */
+/* =========================================================
+   PLAYER PROFILE
+========================================================= */
 
-    function openModal(id) {
+async function loadPlayerProfile() {
 
-      const modal =
-        document.getElementById(id);
+  if (!playerUsername) {
+    return;
+  }
 
-      if (!modal) {
-        return;
-      }
+  try {
 
-      modal.style.display = "flex";
-
-      modal.setAttribute(
-        "aria-hidden",
-        "false"
+    const response =
+      await fetch(
+        `/api/players/${encodeURIComponent(playerUsername)}`
       );
 
-      document.body.classList.add(
-        "modal-open"
+
+    if (!response.ok) {
+      return;
+    }
+
+
+    const player =
+      await response.json();
+
+
+    const coins =
+      Number(player.coins || 0);
+
+    const wins =
+      Number(player.wins || 0);
+
+    const losses =
+      Number(player.losses || 0);
+
+    const rank =
+      player.rank || "Unranked";
+
+
+    const coinBalance =
+      document.getElementById(
+        "coinBalance"
       );
+
+    const dashboardCoins =
+      document.getElementById(
+        "dashboardCoins"
+      );
+
+    const dashboardWins =
+      document.getElementById(
+        "dashboardWins"
+      );
+
+    const dashboardLosses =
+      document.getElementById(
+        "dashboardLosses"
+      );
+
+    const headerRank =
+      document.getElementById(
+        "headerRank"
+      );
+
+    const dashboardRank =
+      document.getElementById(
+        "dashboardRank"
+      );
+
+
+    if (coinBalance) {
+
+      coinBalance.textContent =
+        `🪙 ${coins.toLocaleString()} Coins`;
 
     }
 
 
-    function closeModal(id) {
+    if (dashboardCoins) {
 
-      const modal =
-        document.getElementById(id);
-
-      if (!modal) {
-        return;
-      }
-
-      modal.style.display = "none";
-
-      modal.setAttribute(
-        "aria-hidden",
-        "true"
-      );
-
-      if (
-        !document.querySelector(
-          ".modal[style*='display: flex']"
-        )
-      ) {
-        document.body.classList.remove(
-          "modal-open"
-        );
-      }
+      dashboardCoins.textContent =
+        coins.toLocaleString();
 
     }
 
 
-    /* =========================================================
-       PLAYER PROFILE
-    ========================================================= */
+    if (dashboardWins) {
 
-    async function loadPlayerProfile() {
+      dashboardWins.textContent =
+        wins;
 
-      if (!playerUsername) {
-        return;
-      }
+    }
 
-      try {
 
-        const response =
-          await fetch(
-            `/api/players/${encodeURIComponent(playerUsername)}`
-          );
+    if (dashboardLosses) {
 
-        if (!response.ok) {
-          return;
+      dashboardLosses.textContent =
+        losses;
+
+    }
+
+
+    if (headerRank) {
+
+      headerRank.textContent =
+        `🏅 ${rank}`;
+
+    }
+
+
+    if (dashboardRank) {
+
+      dashboardRank.textContent =
+        rank;
+
+    }
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "Could not load player profile:",
+      error
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   TEAMS
+========================================================= */
+
+function showCreateTeam() {
+
+  updateUsernameInputs();
+
+  openModal("teamModal");
+
+}
+
+
+function closeCreateTeam() {
+
+  closeModal("teamModal");
+
+}
+
+
+async function createTeam() {
+
+  const nameElement =
+    document.getElementById(
+      "teamName"
+    );
+
+  const tagElement =
+    document.getElementById(
+      "teamTag"
+    );
+
+  const errorElement =
+    document.getElementById(
+      "teamError"
+    );
+
+
+  if (
+    !nameElement ||
+    !tagElement ||
+    !errorElement
+  ) {
+
+    console.error(
+      "Team creation elements are missing."
+    );
+
+    return;
+
+  }
+
+
+  const name =
+    nameElement.value.trim();
+
+  const tag =
+    tagElement.value.trim();
+
+  const owner =
+    getUsername();
+
+
+  errorElement.textContent = "";
+
+
+  if (!name || !tag || !owner) {
+
+    errorElement.textContent =
+      "Please fill in all fields.";
+
+    return;
+
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/teams",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            name,
+            tag,
+            owner
+          })
         }
+      );
 
-        const player =
-          await response.json();
 
-        const coins =
-          Number(player.coins || 0);
+    let data = {};
+
+    try {
+
+      data =
+        await response.json();
+
+    }
+
+    catch (error) {
+
+      console.error(
+        "Invalid server response:",
+        error
+      );
+
+    }
+
+
+    if (!response.ok) {
+
+      errorElement.textContent =
+        data.error ||
+        data.message ||
+        "Could not create team.";
+
+      return;
+
+    }
+
+
+    closeCreateTeam();
+
+
+    nameElement.value = "";
+
+    tagElement.value = "";
+
+
+    if (
+      typeof loadTeams === "function"
+    ) {
+
+      await loadTeams();
+
+    }
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "Create team error:",
+      error
+    );
+
+    errorElement.textContent =
+      "Could not connect to GamesArena server.";
+
+  }
+
+}
+
+
+async function loadTeams() {
+
+  const container =
+    document.getElementById(
+      "teams"
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/teams"
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Failed to load teams"
+      );
+
+    }
+
+
+    const teams =
+      await response.json();
+
+
+    if (
+      !Array.isArray(teams) ||
+      teams.length === 0
+    ) {
+
+      container.innerHTML = `
+        <div class="empty">
+          No teams yet.<br>
+          Be the first to create one!
+        </div>
+      `;
+
+      return;
+
+    }
+
+
+    container.innerHTML =
+      teams.map(team => {
+
+        const members =
+          Array.isArray(team.members)
+            ? team.members.length
+            : 0;
+
 
         const wins =
-          Number(player.wins || 0);
+          Number(team.wins || 0);
 
         const losses =
-          Number(player.losses || 0);
-
-        const rank =
-          player.rank || "Unranked";
+          Number(team.losses || 0);
 
 
-        const coinBalance =
-          document.getElementById(
-            "coinBalance"
-          );
+        return `
 
-        const dashboardCoins =
-          document.getElementById(
-            "dashboardCoins"
-          );
+          <div class="match-card">
 
-        const dashboardWins =
-          document.getElementById(
-            "dashboardWins"
-          );
+            <span class="open-status">
+              ${escapeHTML(team.tag)}
+            </span>
 
-        const dashboardLosses =
-          document.getElementById(
-            "dashboardLosses"
-          );
+            <h3>
+              ${escapeHTML(team.name)}
+            </h3>
 
-        const headerRank =
-          document.getElementById(
-            "headerRank"
-          );
+            <p>
+              👑 Captain:
+              ${escapeHTML(
+                team.owner ||
+                team.owner_username ||
+                "Unknown"
+              )}
+            </p>
 
-        const dashboardRank =
-          document.getElementById(
-            "dashboardRank"
-          );
+            <p>
+              👥 Members:
+              ${members}
+            </p>
+
+            <p>
+              🏆 ${wins} Wins ·
+              ${losses} Losses
+            </p>
+
+            <button
+              type="button"
+              onclick="viewTeam(${Number(team.id)})"
+            >
+              View Team
+            </button>
+
+          </div>
+
+        `;
+
+      }).join("");
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "Load teams error:",
+      error
+    );
+
+    container.innerHTML = `
+      <div class="empty">
+        Could not load teams.
+      </div>
+    `;
+
+  }
+
+}
 
 
-        if (coinBalance) {
-          coinBalance.textContent =
-            `🪙 ${coins.toLocaleString()} Coins`;
+function viewTeam(teamId) {
+
+  alert(
+    "Team profile coming next!\n\n" +
+    "Team ID: " +
+    teamId
+  );
+
+}
+
+
+/* =========================================================
+   CREATE MATCH
+========================================================= */
+
+function showCreateMatch() {
+
+  updateUsernameInputs();
+
+
+  const errorElement =
+    document.getElementById(
+      "matchError"
+    );
+
+
+  if (errorElement) {
+
+    errorElement.textContent = "";
+
+  }
+
+
+  openModal("matchModal");
+
+}
+
+
+function closeCreateMatch() {
+
+  closeModal("matchModal");
+
+}
+
+
+async function createMatch() {
+
+  const nameInput =
+    document.getElementById(
+      "matchName"
+    );
+
+  const gameInput =
+    document.getElementById(
+      "matchGame"
+    );
+
+  const formatInput =
+    document.getElementById(
+      "matchFormat"
+    );
+
+  const creatorInput =
+    document.getElementById(
+      "matchCreator"
+    );
+
+  const coinsInput =
+    document.getElementById(
+      "matchCoins"
+    );
+
+  const startTimeInput =
+    document.getElementById(
+      "matchStartTime"
+    );
+
+  const errorElement =
+    document.getElementById(
+      "matchError"
+    );
+
+
+  /* CHECK HTML ELEMENTS */
+
+  if (
+    !nameInput ||
+    !gameInput ||
+    !formatInput ||
+    !creatorInput ||
+    !coinsInput ||
+    !startTimeInput ||
+    !errorElement
+  ) {
+
+    console.error(
+      "Create Match Error: One or more HTML elements are missing."
+    );
+
+    alert(
+      "Create Match form error. Please check the HTML IDs."
+    );
+
+    return;
+
+  }
+
+
+  /* GET FORM VALUES */
+
+  const name =
+    nameInput.value.trim();
+
+  const game =
+    gameInput.value.trim();
+
+  const format =
+    formatInput.value.trim();
+
+  let creator =
+    creatorInput.value.trim();
+
+  const coinsValue =
+    coinsInput.value.trim();
+
+  const entryCoins =
+    coinsValue === ""
+      ? 0
+      : Number(coinsValue);
+
+  const startTime =
+    startTimeInput.value;
+
+
+  /* CLEAR OLD ERROR */
+
+  errorElement.textContent = "";
+
+
+  /* GET SAVED USERNAME */
+
+  if (!creator) {
+
+    creator = getUsername();
+
+  }
+
+
+  /* VALIDATION */
+
+  if (!name) {
+
+    errorElement.textContent =
+      "Please enter a match name.";
+
+    return;
+
+  }
+
+
+  if (!game) {
+
+    errorElement.textContent =
+      "Please select a game.";
+
+    return;
+
+  }
+
+
+  if (!format) {
+
+    errorElement.textContent =
+      "Please select a match format.";
+
+    return;
+
+  }
+
+
+  if (!creator) {
+
+    errorElement.textContent =
+      "Please enter your username.";
+
+    return;
+
+  }
+
+
+  if (
+    !Number.isFinite(entryCoins) ||
+    entryCoins < 0 ||
+    !Number.isInteger(entryCoins)
+  ) {
+
+    errorElement.textContent =
+      "Entry coins must be a valid whole number.";
+
+    return;
+
+  }
+
+
+  /* VALIDATE START TIME */
+
+  if (startTime) {
+
+    const selectedTime =
+      new Date(startTime).getTime();
+
+
+    if (
+      !Number.isFinite(selectedTime) ||
+      selectedTime <= Date.now()
+    ) {
+
+      errorElement.textContent =
+        "Please choose a future match start time.";
+
+      return;
+
+    }
+
+  }
+
+
+  /* GET CREATE BUTTON */
+
+  const createButton =
+    document.querySelector(
+      '#matchModal button[onclick="createMatch()"]'
+    );
+
+
+  /* DISABLE BUTTON */
+
+  if (createButton) {
+
+    createButton.disabled = true;
+
+    createButton.textContent =
+      "Creating Match...";
+
+  }
+
+
+  /* CREATE MATCH */
+
+  try {
+
+    const payload = {
+
+      name: name,
+
+      game: game,
+
+      gameType: game,
+
+      format: format,
+
+      creator: creator,
+
+      entryCoins: entryCoins,
+
+      startTime:
+        startTime
+          ? new Date(startTime).toISOString()
+          : null
+
+    };
+
+
+    console.log(
+      "Creating match:",
+      payload
+    );
+
+
+    const response =
+      await fetch(
+        "/api/matches",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify(payload)
+
         }
+      );
 
-        if (dashboardCoins) {
-          dashboardCoins.textContent =
-            coins.toLocaleString();
-        }
 
-        if (dashboardWins) {
-          dashboardWins.textContent =
-            wins;
-        }
+    let data = {};
 
-        if (dashboardLosses) {
-          dashboardLosses.textContent =
-            losses;
-        }
 
-        if (headerRank) {
-          headerRank.textContent =
-            `🏅 ${rank}`;
-        }
+    try {
 
-        if (dashboardRank) {
-          dashboardRank.textContent =
-            rank;
-        }
+      data =
+        await response.json();
 
-      }
+    }
 
-      catch (error) {
+    catch (jsonError) {
 
-        console.error(
-          "Could not load player profile:",
-          error
-        );
-
-      }
+      console.error(
+        "Server returned invalid JSON:",
+        jsonError
+      );
 
     }
 
 
-    /* =========================================================
-       TEAMS
-    ========================================================= */
-
-    function showCreateTeam() {
-
-      updateUsernameInputs();
-
-      openModal("teamModal");
-
-    }
+    console.log(
+      "Create match response:",
+      response.status,
+      data
+    );
 
 
-    function closeCreateTeam() {
+    /* SERVER ERROR */
 
-      closeModal("teamModal");
+    if (!response.ok) {
 
-    }
+      errorElement.textContent =
+        data.error ||
+        data.message ||
+        `Could not create match. Server error: ${response.status}`;
 
-
-    async function createTeam() {
-
-      const name =
-        document.getElementById(
-          "teamName"
-        ).value.trim();
-
-      const tag =
-        document.getElementById(
-          "teamTag"
-        ).value.trim();
-
-      const owner =
-        getUsername();
-
-      const errorElement =
-        document.getElementById(
-          "teamError"
-        );
-
-
-      errorElement.textContent = "";
-
-
-      if (!name || !tag || !owner) {
-
-        errorElement.textContent =
-          "Please fill in all fields.";
-
-        return;
-
-      }
-
-
-      try {
-
-        const response =
-          await fetch(
-            "/api/teams",
-            {
-              method: "POST",
-
-              headers: {
-                "Content-Type":
-                  "application/json"
-              },
-
-              body: JSON.stringify({
-                name,
-                tag,
-                owner
-              })
-            }
-          );
-
-
-        const data =
-          await response.json();
-
-
-        if (!response.ok) {
-
-          errorElement.textContent =
-            data.error ||
-            "Could not create team.";
-
-          return;
-
-        }
-
-
-        closeCreateTeam();
-
-
-        document.getElementById(
-          "teamName"
-        ).value = "";
-
-        document.getElementById(
-          "teamTag"
-        ).value = "";
-
-
-        await loadTeams();
-
-      }
-
-      catch (error) {
-
-        console.error(error);
-
-        errorElement.textContent =
-          "Could not connect to GamesArena server.";
-
-      }
+      return;
 
     }
 
 
-    async function loadTeams() {
+    /* SAVE USERNAME */
 
-      try {
-
-        const response =
-          await fetch(
-            "/api/teams"
-          );
-
-        if (!response.ok) {
-          throw new Error(
-            "Failed to load teams"
-          );
-        }
-
-        const teams =
-          await response.json();
-
-        const container =
-          document.getElementById(
-            "teams"
-          );
+    playerUsername =
+      creator;
 
 
-        if (
-          !Array.isArray(teams) ||
-          teams.length === 0
-        ) {
-
-          container.innerHTML = `
-            <div class="empty">
-              No teams yet.<br>
-              Be the first to create one!
-            </div>
-          `;
-
-          return;
-
-        }
+    localStorage.setItem(
+      "ffarena_username",
+      creator
+    );
 
 
-        container.innerHTML =
-          teams.map(team => {
+    updateUsernameInputs();
 
-            const members =
-              Array.isArray(team.members)
-                ? team.members.length
-                : 0;
 
-            const wins =
-              Number(team.wins || 0);
+    /* CLOSE MODAL */
 
-            const losses =
-              Number(team.losses || 0);
+    closeCreateMatch();
 
+
+    /* RESET FORM */
+
+    nameInput.value = "";
+
+    gameInput.value = "";
+
+    formatInput.value = "";
+
+    creatorInput.value =
+      playerUsername;
+
+    coinsInput.value = "0";
+
+    startTimeInput.value = "";
+
+
+    /* RELOAD MATCHES */
+
+    if (
+      typeof loadMatches === "function"
+    ) {
+
+      await loadMatches();
+
+    }
+
+
+    /* RELOAD PROFILE */
+
+    if (
+      typeof loadPlayerProfile === "function"
+    ) {
+
+      await loadPlayerProfile();
+
+    }
+
+
+    console.log(
+      "Match created successfully:",
+      data
+    );
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "Create Match Error:",
+      error
+    );
+
+    errorElement.textContent =
+      "Could not connect to GamesArena server.";
+
+  }
+
+  finally {
+
+    if (createButton) {
+
+      createButton.disabled = false;
+
+      createButton.textContent =
+        "🎮 Create Match";
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   LOAD MATCHES
+========================================================= */
+
+async function loadMatches() {
+
+  const container =
+    document.getElementById(
+      "matches"
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/matches"
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Failed to load matches"
+      );
+
+    }
+
+
+    const matches =
+      await response.json();
+
+
+    if (
+      !Array.isArray(matches) ||
+      matches.length === 0
+    ) {
+
+      container.innerHTML = `
+        <div class="empty">
+          No matches yet.<br>
+          Create the first one!
+        </div>
+      `;
+
+      return;
+
+    }
+
+
+    container.innerHTML =
+      matches
+        .map(renderMatchCard)
+        .join("");
+
+
+    updateMatchCountdowns();
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "Load matches error:",
+      error
+    );
+
+    container.innerHTML = `
+      <div class="empty">
+        Could not load matches.
+      </div>
+    `;
+
+  }
+
+}
+
+
+/* =========================================================
+   MATCH CARD
+========================================================= */
+
+function renderMatchCard(match) {
+
+  const status =
+    String(
+      match.status || "OPEN"
+    ).toUpperCase();
+
+
+  const players =
+    Array.isArray(match.players)
+      ? match.players
+      : [];
+
+
+  const game =
+    match.game ||
+    match.gameType ||
+    match.game_type ||
+    "Game not selected";
+
+
+  const start =
+    match.startTime ||
+    match.start_time ||
+    null;
+
+
+  let startText =
+    "Start time not set";
+
+
+  if (start) {
+
+    const date =
+      new Date(start);
+
+
+    if (
+      !Number.isNaN(
+        date.getTime()
+      )
+    ) {
+
+      startText =
+        date.toLocaleString();
+
+    }
+
+  }
+
+
+  /* STATUS */
+
+  let statusClass =
+    "open-status";
+
+  let statusText =
+    "● OPEN";
+
+
+  if (status === "FULL") {
+
+    statusClass =
+      "full-status";
+
+    statusText =
+      "● FULL";
+
+  }
+
+
+  if (status === "LIVE") {
+
+    statusClass =
+      "live";
+
+    statusText =
+      "● LIVE";
+
+  }
+
+
+  if (status === "FINISHED") {
+
+    statusClass =
+      "finished";
+
+    statusText =
+      "● FINISHED";
+
+  }
+
+
+  /* ACTION BUTTONS */
+
+  let actionsHTML = "";
+
+
+  if (status === "OPEN") {
+
+    actionsHTML = `
+
+      <button
+        type="button"
+        onclick="joinMatch(${Number(match.id)})"
+      >
+        🎮 JOIN MATCH
+      </button>
+
+      <button
+        type="button"
+        class="close"
+        onclick="openLobby(${Number(match.id)})"
+      >
+        👥 VIEW LOBBY
+      </button>
+
+    `;
+
+  }
+
+  else if (status === "FULL") {
+
+    actionsHTML = `
+
+      <button
+        type="button"
+        onclick="openLobby(${Number(match.id)})"
+      >
+        👥 OPEN LOBBY
+      </button>
+
+    `;
+
+  }
+
+  else if (status === "LIVE") {
+
+    actionsHTML = `
+
+      <button
+        type="button"
+        onclick="openLive(${Number(match.id)})"
+      >
+        📺 WATCH LIVE MATCH
+      </button>
+
+    `;
+
+  }
+
+  else {
+
+    actionsHTML = `
+
+      <button
+        type="button"
+        onclick="openLive(${Number(match.id)})"
+      >
+        📺 VIEW RESULT
+      </button>
+
+    `;
+
+  }
+
+
+  /* PLAYERS */
+
+  const playersHTML =
+    players.length
+
+      ? players.map(player => {
+
+          const username =
+            escapeHTML(
+              player.username ||
+              player.display_name ||
+              "Player"
+            );
+
+
+          if (
+            String(
+              player.status || ""
+            ).toUpperCase() ===
+            "ELIMINATED"
+          ) {
 
             return `
 
-              <div class="match-card">
+              <div class="player-row">
 
-                <span class="open-status">
-                  ${escapeHTML(team.tag)}
+                <span class="eliminated">
+
+                  <s>
+                    ${username}
+                  </s>
+
+                  ❌ ELIMINATED
+
                 </span>
-
-                <h3>
-                  ${escapeHTML(team.name)}
-                </h3>
-
-                <p>
-                  👑 Captain:
-                  ${escapeHTML(team.owner)}
-                </p>
-
-                <p>
-                  👥 Members:
-                  ${members}
-                </p>
-
-                <p>
-                  🏆 ${wins} Wins ·
-                  ${losses} Losses
-                </p>
-
-                <button
-                  type="button"
-                  onclick="viewTeam(${Number(team.id)})"
-                >
-                  View Team
-                </button>
 
               </div>
 
             `;
 
-          }).join("");
-
-      }
-
-      catch (error) {
-
-        console.error(error);
-
-        document.getElementById(
-          "teams"
-        ).innerHTML = `
-          <div class="empty">
-            Could not load teams.
-          </div>
-        `;
-
-      }
-
-    }
-
-
-    function viewTeam(teamId) {
-
-      alert(
-        "Team profile coming next!\n\n" +
-        "Team ID: " +
-        teamId
-      );
-
-    }
-
-/* =========================================================
-CREATE MATCH
-========================================================= */
-
-function showCreateMatch() {
-
-updateUsernameInputs();
-
-const errorElement =
-document.getElementById("matchError");
-
-if (errorElement) {
-errorElement.textContent = "";
-}
-
-openModal("matchModal");
-
-}
-
-function closeCreateMatch() {
-
-closeModal("matchModal");
-
-}
-
-async function createMatch() {
-
-const nameInput =
-document.getElementById("matchName");
-
-const gameInput =
-document.getElementById("matchGame");
-
-const formatInput =
-document.getElementById("matchFormat");
-
-const creatorInputElement =
-document.getElementById("matchCreator");
-
-const coinsInput =
-document.getElementById("matchCoins");
-
-const startTimeInput =
-document.getElementById("matchStartTime");
-
-const errorElement =
-document.getElementById("matchError");
-
-if (!nameInput ||
-!gameInput ||
-!formatInput ||
-!creatorInputElement ||
-!coinsInput ||
-!startTimeInput ||
-!errorElement) {
-
-```
-console.error(
-  "One or more Create Match elements are missing."
-);
-
-alert(
-  "Create Match form error. Please check the HTML IDs."
-);
-
-return;
-```
-
-}
-
-const name =
-nameInput.value.trim();
-
-const game =
-gameInput.value.trim();
-
-const format =
-formatInput.value.trim();
-
-const creatorInput =
-creatorInputElement.value.trim();
-
-const creator =
-creatorInput || getUsername();
-
-const coinsValue =
-coinsInput.value.trim();
-
-const entryCoins =
-coinsValue === ""
-? 0
-: Number(coinsValue);
-
-const startTime =
-startTimeInput.value;
-
-errorElement.textContent = "";
-
-/* =========================
-VALIDATION
-========================= */
-
-if (!name) {
-
-```
-errorElement.textContent =
-  "Please enter a match name.";
-
-return;
-```
-
-}
-
-if (!game) {
-
-```
-errorElement.textContent =
-  "Please select a game.";
-
-return;
-```
-
-}
-
-if (!format) {
-
-```
-errorElement.textContent =
-  "Please select a match format.";
-
-return;
-```
-
-}
-
-if (!creator) {
-
-```
-errorElement.textContent =
-  "Please enter your username.";
-
-return;
-```
-
-}
-
-if (
-!Number.isFinite(entryCoins) ||
-entryCoins < 0 ||
-!Number.isInteger(entryCoins)
-) {
-
-```
-errorElement.textContent =
-  "Entry coins must be a valid whole number.";
-
-return;
-```
-
-}
-
-if (startTime) {
-
-```
-const selectedTime =
-  new Date(startTime).getTime();
-
-
-if (
-  !Number.isFinite(selectedTime) ||
-  selectedTime <= Date.now()
-) {
-
-  errorElement.textContent =
-    "Please choose a future match start time.";
-
-  return;
-
-}
-```
-
-}
-
-/* =========================
-CREATE MATCH
-========================= */
-
-try {
-
-```
-const response =
-  await fetch(
-    "/api/matches",
-    {
-      method: "POST",
-
-      headers: {
-        "Content-Type":
-          "application/json"
-      },
-
-      body: JSON.stringify({
-
-        name: name,
-
-        game: game,
-
-        gameType: game,
-
-        format: format,
-
-        creator: creator,
-
-        entryCoins: entryCoins,
-
-        startTime:
-          startTime
-            ? new Date(
-                startTime
-              ).toISOString()
-            : null
-
-      })
-    }
-  );
-
-
-const data =
-  await response.json();
-
-
-if (!response.ok) {
-
-  errorElement.textContent =
-    data.error ||
-    "Could not create match.";
-
-  return;
-
-}
-
-
-/* =========================
-   SAVE USERNAME
-========================= */
-
-if (creator) {
-
-  playerUsername = creator;
-
-  localStorage.setItem(
-    "ffarena_username",
-    creator
-  );
-
-}
-
-
-/* =========================
-   SUCCESS
-========================= */
-
-closeCreateMatch();
-
-
-nameInput.value = "";
-
-gameInput.selectedIndex = 0;
-
-formatInput.selectedIndex = 0;
-
-coinsInput.value = "";
-
-startTimeInput.value = "";
-
-
-if (typeof loadMatches === "function") {
-
-  await loadMatches();
-
-}
-```
-
-}
-
-catch (error) {
-
-```
-console.error(
-  "Create match error:",
-  error
-);
-
-
-errorElement.textContent =
-  "Could not connect to GamesArena server.";
-```
-
-}
-
-}
-
-    /* =========================================================
-       LOAD MATCHES
-    ========================================================= */
-
-    async function loadMatches() {
-
-      try {
-
-        const response =
-          await fetch(
-            "/api/matches"
-          );
-
-        if (!response.ok) {
-          throw new Error(
-            "Failed to load matches"
-          );
-        }
-
-        const matches =
-          await response.json();
-
-        const container =
-          document.getElementById(
-            "matches"
-          );
-
-
-        if (
-          !Array.isArray(matches) ||
-          matches.length === 0
-        ) {
-
-          container.innerHTML = `
-            <div class="empty">
-              No matches yet.<br>
-              Create the first one!
-            </div>
-          `;
-
-          return;
-
-        }
-
-
-        container.innerHTML =
-          matches
-            .map(renderMatchCard)
-            .join("");
-
-
-        updateMatchCountdowns();
-
-      }
-
-      catch (error) {
-
-        console.error(error);
-
-        document.getElementById(
-          "matches"
-        ).innerHTML = `
-          <div class="empty">
-            Could not load matches.
-          </div>
-        `;
-
-      }
-
-    }
-
-
-    /* =========================================================
-       MATCH CARD
-    ========================================================= */
-
-    function renderMatchCard(match) {
-
-      const status =
-        String(
-          match.status || "OPEN"
-        ).toUpperCase();
-
-
-      const players =
-        Array.isArray(match.players)
-          ? match.players
-          : [];
-
-
-      const game =
-        match.game ||
-        match.gameType ||
-        match.game_type ||
-        "Game not selected";
-
-
-      const start =
-        match.startTime ||
-        match.start_time ||
-        null;
-
-
-      let startText =
-        "Start time not set";
-
-
-      if (start) {
-
-        const date =
-          new Date(start);
-
-        if (
-          !Number.isNaN(
-            date.getTime()
-          )
-        ) {
-
-          startText =
-            date.toLocaleString();
-
-        }
-
-      }
-
-
-      let statusClass =
-        "open-status";
-
-      let statusText =
-        "● OPEN";
-
-
-      if (status === "FULL") {
-
-        statusClass =
-          "full-status";
-
-        statusText =
-          "● FULL";
-
-      }
-
-
-      if (status === "LIVE") {
-
-        statusClass =
-          "live";
-
-        statusText =
-          "● LIVE";
-
-      }
-
-
-      if (status === "FINISHED") {
-
-        statusClass =
-          "finished";
-
-        statusText =
-          "● FINISHED";
-
-      }
-
-
-      let actionsHTML = "";
-
-
-      if (status === "OPEN") {
-
-        actionsHTML = `
-
-          <button
-            type="button"
-            onclick="joinMatch(${Number(match.id)})"
-          >
-            🎮 JOIN MATCH
-          </button>
-
-          <button
-            type="button"
-            class="close"
-            onclick="openLobby(${Number(match.id)})"
-          >
-            👥 VIEW LOBBY
-          </button>
-
-        `;
-
-      }
-
-      else if (status === "FULL") {
-
-        actionsHTML = `
-
-          <button
-            type="button"
-            onclick="openLobby(${Number(match.id)})"
-          >
-            👥 OPEN LOBBY
-          </button>
-
-        `;
-
-      }
-
-      else if (status === "LIVE") {
-
-        actionsHTML = `
-
-          <button
-            type="button"
-            onclick="openLive(${Number(match.id)})"
-          >
-            📺 WATCH LIVE MATCH
-          </button>
-
-        `;
-
-      }
-
-      else {
-
-        actionsHTML = `
-
-          <button
-            type="button"
-            onclick="openLive(${Number(match.id)})"
-          >
-            📺 VIEW RESULT
-          </button>
-
-        `;
-
-      }
-
-
-      const playersHTML =
-        players.length
-
-          ? players.map(player => {
-
-              const username =
-                escapeHTML(
-                  player.username ||
-                  "Player"
-                );
-
-
-              if (
-                String(
-                  player.status || ""
-                ).toUpperCase() ===
-                "ELIMINATED"
-              ) {
-
-                return `
-
-                  <div class="player-row">
-
-                    <span class="eliminated">
-
-                      <s>
-                        ${username}
-                      </s>
-
-                      ❌ ELIMINATED
-
-                    </span>
-
-                  </div>
-
-                `;
-
-              }
-
-
-              return `
-
-                <div class="player-row">
-
-                  <span class="alive">
-
-                    ${username}
-
-                    🟢 ALIVE
-
-                  </span>
-
-                </div>
-
-              `;
-
-            }).join("")
-
-          : `
-
-            <div class="player-row">
-              No players yet.
-            </div>
-
-          `;
-
-
-      const maxPlayers =
-        Number(
-          match.maxPlayers || 0
-        );
-
-
-      const entryCoins =
-        Number(
-          match.entryCoins || 0
-        );
-
-
-      const rewardCoins =
-        Number(
-          match.rewardCoins ||
-          match.potentialReward ||
-          0
-        );
-
-
-      return `
-
-        <div
-          class="match-card"
-          data-match-id="${Number(match.id)}"
-        >
-
-          <div class="match-top">
-
-            <div>
-
-              <span class="${statusClass}">
-                ${statusText}
-              </span>
-
-              <h3>
-                ${escapeHTML(
-                  match.name ||
-                  "Untitled Match"
-                )}
-              </h3>
-
-              <div class="match-game">
-                🎮
-                ${escapeHTML(game)}
-              </div>
-
-            </div>
-
-          </div>
-
-
-          <p class="match-time">
-            📅 ${escapeHTML(startText)}
-          </p>
-
-
-          ${
-            start &&
-            status === "OPEN"
-
-              ? `
-
-                <div
-                  class="countdown"
-                  data-start="${escapeHTML(start)}"
-                >
-                  ⏰ Calculating...
-                </div>
-
-              `
-
-              : ""
           }
 
 
-          <p>
-            ⚔️ Format:
-            <strong>
-              ${escapeHTML(
-                match.format ||
-                "Standard"
-              )}
-            </strong>
-          </p>
+          return `
 
+            <div class="player-row">
 
-          <p>
-            👤 Creator:
-            ${escapeHTML(
-              match.creator ||
-              "Unknown"
-            )}
-          </p>
+              <span class="alive">
 
+                ${username}
 
-          <p>
-            🪙 Entry:
-            <strong class="gold">
-              ${entryCoins.toLocaleString()}
-            </strong>
-            coins
-          </p>
+                🟢 ALIVE
 
+              </span>
 
-          <p>
-            🏆 Reward:
-            <strong class="gold">
-              ${rewardCoins.toLocaleString()}
-            </strong>
-            coins
-          </p>
+            </div>
 
+          `;
 
-          <p>
-            👥 Players:
-            ${players.length}/${maxPlayers}
-          </p>
+        }).join("")
 
+      : `
 
-          <div style="margin:15px 0;">
-            ${playersHTML}
-          </div>
-
-
-          <div class="match-actions">
-            ${actionsHTML}
-          </div>
-
+        <div class="player-row">
+          No players yet.
         </div>
 
       `;
 
-    }
+
+  /* MATCH DETAILS */
+
+  const maxPlayers =
+    Number(
+      match.maxPlayers ||
+      match.max_players ||
+      0
+    );
 
 
-    /* =========================================================
-       MATCH COUNTDOWN
-    ========================================================= */
-
-    function updateMatchCountdowns() {
-
-      document
-        .querySelectorAll(
-          ".countdown[data-start]"
-        )
-        .forEach(element => {
-
-          const start =
-            element.dataset.start;
-
-          const diff =
-            new Date(start).getTime() -
-            Date.now();
+  const entryCoins =
+    Number(
+      match.entryCoins ||
+      match.entry_coins ||
+      0
+    );
 
 
-          if (
-            !Number.isFinite(diff)
-          ) {
-
-            element.textContent =
-              "Start time unavailable";
-
-            return;
-
-          }
+  const rewardCoins =
+    Number(
+      match.rewardCoins ||
+      match.reward_coins ||
+      match.potentialReward ||
+      0
+    );
 
 
-          if (diff <= 0) {
-
-            element.textContent =
-              "⏰ Start time reached";
-
-            return;
-
-          }
+  const creator =
+    match.creator ||
+    match.creator_username ||
+    "Unknown";
 
 
-          const total =
-            Math.floor(
-              diff / 1000
-            );
+  /* RETURN CARD */
+
+  return `
+
+    <div
+      class="match-card"
+      data-match-id="${Number(match.id)}"
+    >
+
+      <div class="match-top">
+
+        <div>
+
+          <span class="${statusClass}">
+            ${statusText}
+          </span>
+
+          <h3>
+            ${escapeHTML(
+              match.name ||
+              "Untitled Match"
+            )}
+          </h3>
+
+          <div class="match-game">
+
+            🎮
+
+            ${escapeHTML(game)}
+
+          </div>
+
+        </div>
+
+      </div>
 
 
-          const days =
-            Math.floor(
-              total / 86400
-            );
+      <p class="match-time">
+        📅 ${escapeHTML(startText)}
+      </p>
 
 
-          const hours =
-            Math.floor(
-              (total % 86400) / 3600
-            );
+      ${
+        start &&
+        status === "OPEN"
+
+          ? `
+
+            <div
+              class="countdown"
+              data-start="${escapeHTML(start)}"
+            >
+              ⏰ Calculating...
+            </div>
+
+          `
+
+          : ""
+      }
 
 
-          const minutes =
-            Math.floor(
-              (total % 3600) / 60
-            );
+      <p>
+
+        ⚔️ Format:
+
+        <strong>
+          ${escapeHTML(
+            match.format ||
+            "Standard"
+          )}
+        </strong>
+
+      </p>
 
 
-          const seconds =
-            total % 60;
+      <p>
+
+        👤 Creator:
+
+        ${escapeHTML(creator)}
+
+      </p>
 
 
-          element.textContent =
-            `⏰ Starts in ${
-              days
-                ? days + "d "
-                : ""
-            }${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+      <p>
 
-        });
+        🪙 Entry:
 
-    }
+        <strong class="gold">
+          ${entryCoins.toLocaleString()}
+        </strong>
+
+        coins
+
+      </p>
 
 
+      <p>
+
+        🏆 Reward:
+
+        <strong class="gold">
+          ${rewardCoins.toLocaleString()}
+        </strong>
+
+        coins
+
+      </p>
+
+
+      <p>
+
+        👥 Players:
+
+        ${players.length}/${maxPlayers}
+
+      </p>
+
+
+      <div style="margin:15px 0;">
+
+        ${playersHTML}
+
+      </div>
+
+
+      <div class="match-actions">
+
+        ${actionsHTML}
+
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   MATCH COUNTDOWN
+========================================================= */
+
+function updateMatchCountdowns() {
+
+  document
+    .querySelectorAll(
+      ".countdown[data-start]"
+    )
+    .forEach(element => {
+
+      const start =
+        element.dataset.start;
+
+
+      const startTime =
+        new Date(start).getTime();
+
+
+      const diff =
+        startTime -
+        Date.now();
+
+
+      if (
+        !Number.isFinite(startTime)
+      ) {
+
+        element.textContent =
+          "Start time unavailable";
+
+        return;
+
+      }
+
+
+      if (diff <= 0) {
+
+        element.textContent =
+          "⏰ Start time reached";
+
+        return;
+
+      }
+
+
+      const total =
+        Math.floor(
+          diff / 1000
+        );
+
+
+      const days =
+        Math.floor(
+          total / 86400
+        );
+
+
+      const hours =
+        Math.floor(
+          (total % 86400) / 3600
+        );
+
+
+      const minutes =
+        Math.floor(
+          (total % 3600) / 60
+        );
+
+
+      const seconds =
+        total % 60;
+
+
+      element.textContent =
+        `⏰ Starts in ${
+          days
+            ? days + "d "
+            : ""
+        }${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+
+    });
+
+}
+
+
+/* =========================================================
+   AUTO UPDATE COUNTDOWNS
+========================================================= */
+
+setInterval(
+  updateMatchCountdowns,
+  1000
+);
     /* =========================================================
        JOIN MATCH
     ========================================================= */
