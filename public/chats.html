@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>FFArena - Chats</title>
+
+<style>
+
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
+body{
+  font-family:Arial,sans-serif;
+  background:#080b12;
+  height:100vh;
+  overflow:hidden;
+  color:white;
+}
+
+
+    /* =========================================================
+       MODERN GAMESARENA NAVBAR
+    ========================================================= */
+
+    .main-navbar {
+      position: sticky;
+      top: 0;
+      left: 0;
+
+      width: 100%;
+      min-height: 78px;
+
+      display: flex;
+      align-items: center;
+
+      gap: 20px;
+
+      padding: 10px 30px;
+
+      background: rgba(8, 11, 18, 0.96);
+
+      border-bottom: 1px solid var(--ga-line);
+
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+
+      z-index: 9999;
+    }
+
+
+    /* BRAND */
+
+    .brand {
+      display: flex;
+      align-items: center;
+
+      gap: 12px;
+
+      color: white;
+      text-decoration: none;
+
+      min-width: 220px;
+    }
+
+    .brand img {
+      width: 52px;
+      height: 52px;
+
+      object-fit: cover;
+
+      border-radius: 50%;
+
+      border: 2px solid var(--ga-gold);
+
+      box-shadow:
+        0 0 12px rgba(255, 176, 0, 0.25);
+    }
+
+    .brand-name {
+      font-size: 23px;
+      font-weight: 900;
+      letter-spacing: 0.3px;
+    }
+
+    .brand-name span {
+      color: var(--ga-gold);
+    }
+
+
+    /* NAVIGATION */
+
+    .navbar-links {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      gap: 6px;
+
+      flex: 1;
+    }
+
+    .navbar-links a {
+      display: flex;
+      align-items: center;
+
+      gap: 7px;
+
+      padding: 11px 14px;
+
+      color: #aeb8ca;
+
+      text-decoration: none;
+
+      border-radius: 9px;
+
+      font-size: 14px;
+      font-weight: 700;
+
+      transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
+    }
+
+    .navbar-links a:hover {
+      color: white;
+      background: var(--ga-panel-2);
+
+      transform: translateY(-1px);
+    }
+
+    .navbar-links a.active {
+      color: var(--ga-gold);
+
+      background:
+        rgba(255, 176, 0, 0.08);
+    }
+
+
+    /* PROFILE */
+
+    .navbar-profile {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .coins,
+    .rank-badge {
+      background: var(--ga-panel-2);
+
+      border: 1px solid #343d50;
+
+      padding: 10px 13px;
+
+      border-radius: 10px;
+
+      white-space: nowrap;
+
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    .coins {
+      color: var(--ga-gold-light);
+    }
+
+    .rank-badge {
+      color: white;
+    }
+
+
+    /* MOBILE BUTTON */
+
+    .mobile-menu-btn {
+      display: none;
+
+      width: auto;
+
+      margin: 0;
+
+      padding: 9px 12px;
+
+      background: var(--ga-panel-2);
+
+      color: white;
+
+      border: 1px solid #343d50;
+
+      border-radius: 9px;
+
+      font-size: 20px;
+    }
+
+
+    /* =========================================================
+       MAIN
+    ========================================================= */
+
+    main {
+      width: min(1200px, 100%);
+
+      margin: auto;
+
+      padding: 40px 20px 70px;
+    }
+
+
+    /* =========================================================
+       SEARCH
+    ========================================================= */
+
+    .home-search {
+      display: flex;
+
+      gap: 10px;
+
+      margin-bottom: 24px;
+    }
+
+    .home-search input {
+      flex: 1;
+
+      min-width: 0;
+
+      background: var(--ga-panel);
+
+      border: 1px solid #343d50;
+
+      border-radius: 10px;
+
+      padding: 14px 16px;
+
+      color: white;
+
+      outline: none;
+    }
+
+    .home-search input:focus {
+      border-color: var(--ga-gold);
+
+      box-shadow:
+        0 0 0 3px
+        rgba(255, 176, 0, 0.1);
+    }
+
+
+/* =========================
+   CHAT APP
+========================= */
+
+.chat-app{
+  height:calc(100vh - 70px);
+
+  display:grid;
+
+  grid-template-columns:380px 1fr;
+}
+
+/* =========================
+   PLAYERS
+========================= */
+
+.players-panel{
+  background:#10141c;
+
+  border-right:1px solid #292f3a;
+
+  display:flex;
+  flex-direction:column;
+
+  min-width:0;
+}
+
+.players-header{
+  padding:20px;
+
+  background:#151a23;
+
+  border-bottom:1px solid #292f3a;
+}
+
+.players-header h2{
+  margin-bottom:15px;
+}
+
+.search-box{
+  width:100%;
+
+  padding:13px 15px;
+
+  background:#080b12;
+
+  border:1px solid #303746;
+
+  border-radius:9px;
+
+  color:white;
+
+  outline:none;
+}
+
+.search-box:focus{
+  border-color:#ffb000;
+}
+
+.players-list{
+  flex:1;
+  overflow-y:auto;
+}
+
+.player{
+  display:flex;
+  align-items:center;
+
+  gap:13px;
+
+  padding:15px 18px;
+
+  cursor:pointer;
+
+  border-bottom:1px solid #1d222c;
+}
+
+.player:hover{
+  background:#1a202b;
+}
+
+.player.active{
+  background:#252c38;
+}
+
+.avatar{
+  width:50px;
+  height:50px;
+
+  min-width:50px;
+
+  border-radius:50%;
+
+  background:#ffb000;
+
+  color:#111;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  font-size:18px;
+  font-weight:bold;
+}
+
+.player-info{
+  flex:1;
+  min-width:0;
+}
+
+.player-name{
+  font-weight:bold;
+  margin-bottom:6px;
+}
+
+.last-message{
+  color:#8993a5;
+  font-size:13px;
+
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.online{
+  width:10px;
+  height:10px;
+
+  border-radius:50%;
+
+  background:#36d65c;
+
+  box-shadow:0 0 7px #36d65c;
+}
+
+/* =========================
+   CHAT
+========================= */
+
+.chat-panel{
+  background:#0b0f16;
+
+  display:flex;
+  flex-direction:column;
+
+  min-width:0;
+}
+
+.chat-top{
+  height:70px;
+
+  background:#111722;
+
+  border-bottom:1px solid #293246;
+
+  display:flex;
+  align-items:center;
+
+  padding:10px 20px;
+
+  gap:12px;
+}
+
+.chat-avatar{
+  width:45px;
+  height:45px;
+
+  border-radius:50%;
+
+  background:#ffb000;
+
+  color:#111;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  font-weight:bold;
+}
+
+.chat-user-info h3{
+  font-size:16px;
+  margin-bottom:4px;
+}
+
+.chat-user-info p{
+  color:#8b95a6;
+  font-size:12px;
+}
+
+.messages{
+  flex:1;
+
+  overflow-y:auto;
+
+  padding:25px;
+
+  display:flex;
+  flex-direction:column;
+
+  gap:10px;
+
+  background:
+    radial-gradient(
+      circle at center,
+      #121824,
+      #080b12
+    );
+}
+
+.welcome{
+  margin:auto;
+
+  text-align:center;
+
+  color:#7f899d;
+}
+
+.welcome h2{
+  color:#dce2eb;
+
+  margin-bottom:8px;
+}
+
+.message{
+  max-width:65%;
+
+  padding:10px 13px;
+
+  border-radius:10px;
+
+  line-height:1.4;
+
+  color:white;
+}
+
+.message.received{
+  align-self:flex-start;
+
+  background:#202734;
+
+  border-top-left-radius:2px;
+}
+
+.message.sent{
+  align-self:flex-end;
+
+  background:#7a5600;
+
+  border-top-right-radius:2px;
+}
+
+.message-time{
+  font-size:10px;
+
+  color:#aeb5c0;
+
+  float:right;
+
+  margin-left:12px;
+
+  margin-top:5px;
+}
+
+/* =========================
+   MESSAGE FORM
+========================= */
+
+.message-form{
+  min-height:65px;
+
+  background:#111722;
+
+  border-top:1px solid #293246;
+
+  display:flex;
+  align-items:center;
+
+  gap:10px;
+
+  padding:10px 15px;
+}
+
+.message-input{
+  flex:1;
+
+  padding:13px 16px;
+
+  border:1px solid #343d50;
+
+  border-radius:25px;
+
+  outline:none;
+
+  font-size:14px;
+
+  background:#080b12;
+
+  color:white;
+}
+
+.message-input:focus{
+  border-color:#ffb000;
+}
+
+.send-btn{
+  width:48px;
+  height:48px;
+
+  border:none;
+
+  border-radius:50%;
+
+  background:#ffb000;
+
+  color:#111;
+
+  font-size:18px;
+
+  cursor:pointer;
+}
+
+.send-btn:hover{
+  background:#ffc433;
+}
+
+.send-btn:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+}
+
+/* =========================
+   BACK BUTTON
+========================= */
+
+.back-btn{
+  display:none;
+
+  border:none;
+
+  background:transparent;
+
+  color:white;
+
+  font-size:25px;
+
+  cursor:pointer;
+
+  width:auto;
+
+  margin:0;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media(max-width:750px){
+
+  nav{
+    height:65px;
+    padding:0 15px;
+  }
+
+  .logo img{
+    width:42px;
+    height:42px;
+  }
+
+  .logo h2{
+    font-size:19px;
+  }
+
+  .nav-links{
+    display:none;
+  }
+
+  .chat-app{
+    height:calc(100vh - 65px);
+
+    grid-template-columns:1fr;
+  }
+
+  .chat-panel{
+    display:none;
+  }
+
+  .chat-app.chat-open .players-panel{
+    display:none;
+  }
+
+  .chat-app.chat-open .chat-panel{
+    display:flex;
+  }
+
+  .back-btn{
+    display:block;
+  }
+
+  .message{
+    max-width:82%;
+  }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+
+  <!-- =======================================================
+       NAVBAR
+  ======================================================== -->
+
+  <header class="main-navbar">
+
+    <a
+      href="index.html"
+      class="brand"
+      aria-label="GamesArena Home"
+    >
+
+      <img
+        src="/logo.jpg"
+        alt="GamesArena Logo"
+        onerror="this.style.display='none'"
+      >
+
+      <span class="brand-name">
+        Games<span>Arena</span>
+      </span>
+
+    </a>
+
+
+    <button
+      class="mobile-menu-btn"
+      id="mobileMenuBtn"
+      type="button"
+      aria-label="Open navigation"
+      aria-expanded="false"
+    >
+      ☰
+    </button>
+
+
+    <nav
+      class="navbar-links"
+      id="navbarLinks"
+      aria-label="Main navigation"
+    >
+
+      <a
+        href="index.html"
+        class="active"
+      >
+        🏠
+        <span>Home</span>
+      </a>
+
+      <a href="players.html">
+        👥
+        <span>Players</span>
+      </a>
+
+      <a href="chats.html">
+        💬
+        <span>Chats</span>
+      </a>
+
+      <a href="events.html">
+        🏆
+        <span>Events</span>
+      </a>
+    </nav>
+
+
+
+  </header>
+
+<!-- =========================
+     CHAT APP
+========================= -->
+
+<div class="chat-app" id="chatApp">
+
+
+  <!-- =========================
+       PLAYERS
+  ========================= -->
+
+  <section class="players-panel">
+
+    <div class="players-header">
+
+      <h2>Chats</h2>
+
+      <input
+        type="text"
+        id="searchBox"
+        class="search-box"
+        placeholder="Search players..."
+        autocomplete="off"
+      >
+
+    </div>
+
+
+    <div
+      class="players-list"
+      id="playersList"
+    ></div>
+
+  </section>
+
+
+  <!-- =========================
+       CHAT PANEL
+  ========================= -->
+
+  <section class="chat-panel">
+
+
+    <div class="chat-top">
+
+      <button
+        class="back-btn"
+        onclick="closeChat()"
+      >
+        ←
+      </button>
+
+
+      <div
+        class="chat-avatar"
+        id="chatAvatar"
+      >
+        ?
+      </div>
+
+
+      <div class="chat-user-info">
+
+        <h3 id="chatUsername">
+          Select a player
+        </h3>
+
+        <p id="chatStatus">
+          Choose a player to start chatting
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <!-- MESSAGES -->
+
+    <div
+      class="messages"
+      id="messages"
+    >
+
+      <div class="welcome">
+
+        <h2>💬 FFArena Chats</h2>
+
+        <p>
+          Select a player from the left to start chatting.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <!-- MESSAGE FORM -->
+
+    <form
+      class="message-form"
+      id="messageForm"
+    >
+
+      <input
+        type="text"
+        id="messageInput"
+        class="message-input"
+        placeholder="Type a message..."
+        autocomplete="off"
+      >
+
+      <button
+        type="submit"
+        class="send-btn"
+        id="sendBtn"
+      >
+        ➤
+      </button>
+
+    </form>
+
+
+  </section>
+
+</div>
+
+
+<script>
+
+/* =====================================================
+   TEMPORARY CURRENT PLAYER
+===================================================== */
+
+/*
+   For now ShadowKing is the logged-in player.
+
+   Later, when we build login/signup,
+   this will automatically become the
+   actual logged-in player.
+*/
+
+const CURRENT_PLAYER_ID = 1;
+
+
+/* =====================================================
+   VARIABLES
+===================================================== */
+
+let players = [];
+
+let selectedPlayer = null;
+
+let messageRefresh = null;
+
+
+/* =====================================================
+   LOAD PLAYERS
+===================================================== */
+
+async function loadPlayers(){
+
+  try{
+
+    const response =
+      await fetch("/api/players");
+
+    const result =
+      await response.json();
+
+    if(!result.success){
+
+      throw new Error(
+        result.error || "Could not load players."
+      );
+
+    }
+
+    players =
+      result.players.filter(
+        player =>
+          Number(player.id) !==
+          CURRENT_PLAYER_ID
+      );
+
+    displayPlayers(players);
+
+  }
+
+  catch(error){
+
+    console.error(error);
+
+    document.getElementById(
+      "playersList"
+    ).innerHTML = `
+
+      <div style="
+        padding:20px;
+        color:#ff6b6b;
+        text-align:center;
+      ">
+        Could not load players.
+        <br><br>
+        Make sure your server is running.
+      </div>
+
+    `;
+
+  }
+
+}
+
+
+/* =====================================================
+   DISPLAY PLAYERS
+===================================================== */
+
+function displayPlayers(list){
+
+  const playersList =
+    document.getElementById(
+      "playersList"
+    );
+
+  playersList.innerHTML = "";
+
+
+  if(list.length === 0){
+
+    playersList.innerHTML = `
+
+      <div style="
+        padding:30px;
+        text-align:center;
+        color:#7f899d;
+      ">
+        No players found.
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  list.forEach(player => {
+
+    const div =
+      document.createElement("div");
+
+    div.className = "player";
+
+
+    if(
+      selectedPlayer &&
+      Number(selectedPlayer.id) ===
+      Number(player.id)
+    ){
+
+      div.classList.add("active");
+
+    }
+
+
+    const name =
+      player.display_name ||
+      player.username;
+
+
+    const firstLetter =
+      name.charAt(0).toUpperCase();
+
+
+    div.innerHTML = `
+
+      <div class="avatar">
+
+        ${
+          player.avatar_url
+            ? `<img
+                src="${player.avatar_url}"
+                style="
+                  width:100%;
+                  height:100%;
+                  border-radius:50%;
+                  object-fit:cover;
+                "
+              >`
+            : firstLetter
+        }
+
+      </div>
+
+
+      <div class="player-info">
+
+        <div class="player-name">
+
+          ${escapeHtml(name)}
+
+        </div>
+
+
+        <div class="last-message">
+
+          ${
+            player.online
+              ? "Online"
+              : "Offline"
+          }
+
+        </div>
+
+      </div>
+
+
+      ${
+        player.online
+          ? '<div class="online"></div>'
+          : ''
+      }
+
+    `;
+
+
+    div.addEventListener(
+      "click",
+      () => openChat(player)
+    );
+
+
+    playersList.appendChild(div);
+
+  });
+
+}
+
+
+/* =====================================================
+   OPEN CHAT
+===================================================== */
+
+async function openChat(player){
+
+  selectedPlayer = player;
+
+
+  document
+    .getElementById("chatApp")
+    .classList.add("chat-open");
+
+
+  const name =
+    player.display_name ||
+    player.username;
+
+
+  document.getElementById(
+    "chatUsername"
+  ).textContent = name;
+
+
+  document.getElementById(
+    "chatAvatar"
+  ).textContent =
+    name.charAt(0).toUpperCase();
+
+
+  document.getElementById(
+    "chatStatus"
+  ).textContent =
+    player.online
+      ? "Online"
+      : "Offline";
+
+
+  displayPlayers(
+    players.filter(
+      p =>
+        p.username
+          .toLowerCase()
+          .includes(
+            document
+              .getElementById("searchBox")
+              .value
+              .toLowerCase()
+          )
+    )
+  );
+
+
+  await loadMessages();
+
+
+  document
+    .getElementById("messageInput")
+    .focus();
+
+
+  startMessageRefresh();
+
+}
+
+
+/* =====================================================
+   LOAD MESSAGES
+===================================================== */
+
+async function loadMessages(){
+
+  if(!selectedPlayer){
+
+    return;
+
+  }
+
+
+  try{
+
+    const url =
+      `/api/messages?sender_id=${CURRENT_PLAYER_ID}&receiver_id=${selectedPlayer.id}`;
+
+
+    const response =
+      await fetch(url);
+
+
+    const result =
+      await response.json();
+
+
+    if(!result.success){
+
+      throw new Error(
+        result.error ||
+        "Could not load messages."
+      );
+
+    }
+
+
+    displayMessages(
+      result.messages
+    );
+
+  }
+
+  catch(error){
+
+    console.error(
+      "Message loading error:",
+      error
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   DISPLAY MESSAGES
+===================================================== */
+
+function displayMessages(messageList){
+
+  const messages =
+    document.getElementById(
+      "messages"
+    );
+
+
+  messages.innerHTML = "";
+
+
+  if(!messageList.length){
+
+    messages.innerHTML = `
+
+      <div class="welcome">
+
+        <h2>Say hello 👋</h2>
+
+        <p>
+          Start a conversation with
+          ${escapeHtml(
+            selectedPlayer.display_name ||
+            selectedPlayer.username
+          )}.
+        </p>
+
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  messageList.forEach(message => {
+
+    const div =
+      document.createElement("div");
+
+
+    const type =
+      Number(message.sender_id) ===
+      Number(CURRENT_PLAYER_ID)
+        ? "sent"
+        : "received";
+
+
+    div.className =
+      `message ${type}`;
+
+
+    const date =
+      new Date(
+        message.created_at
+      );
+
+
+    const time =
+      date.toLocaleTimeString(
+        [],
+        {
+          hour:"2-digit",
+          minute:"2-digit"
+        }
+      );
+
+
+    div.innerHTML = `
+
+      ${escapeHtml(message.message)}
+
+      <span class="message-time">
+
+        ${time}
+
+      </span>
+
+    `;
+
+
+    messages.appendChild(div);
+
+  });
+
+
+  messages.scrollTop =
+    messages.scrollHeight;
+
+}
+
+
+/* =====================================================
+   SEND MESSAGE
+===================================================== */
+
+document
+  .getElementById("messageForm")
+  .addEventListener(
+    "submit",
+    async function(event){
+
+      event.preventDefault();
+
+
+      if(!selectedPlayer){
+
+        alert(
+          "Select a player first."
+        );
+
+        return;
+
+      }
+
+
+      const input =
+        document.getElementById(
+          "messageInput"
+        );
+
+
+      const sendBtn =
+        document.getElementById(
+          "sendBtn"
+        );
+
+
+      const text =
+        input.value.trim();
+
+
+      if(!text){
+
+        return;
+
+      }
+
+
+      sendBtn.disabled = true;
+
+
+      try{
+
+        const response =
+          await fetch(
+            "/api/messages",
+            {
+              method:"POST",
+
+              headers:{
+                "Content-Type":
+                  "application/json"
+              },
+
+              body:JSON.stringify({
+
+                sender_id:
+                  CURRENT_PLAYER_ID,
+
+                receiver_id:
+                  selectedPlayer.id,
+
+                message:text
+
+              })
+
+            }
+          );
+
+
+        const result =
+          await response.json();
+
+
+        if(!result.success){
+
+          throw new Error(
+            result.error ||
+            "Message could not be sent."
+          );
+
+        }
+
+
+        input.value = "";
+
+
+        await loadMessages();
+
+      }
+
+      catch(error){
+
+        console.error(error);
+
+        alert(
+          "Could not send message: " +
+          error.message
+        );
+
+      }
+
+
+      sendBtn.disabled = false;
+
+      input.focus();
+
+    }
+  );
+
+
+/* =====================================================
+   SEARCH
+===================================================== */
+
+document
+  .getElementById("searchBox")
+  .addEventListener(
+    "input",
+    function(){
+
+      const search =
+        this.value
+          .toLowerCase()
+          .trim();
+
+
+      const filtered =
+        players.filter(player => {
+
+          const username =
+            player.username
+              .toLowerCase();
+
+
+          const displayName =
+            (
+              player.display_name ||
+              ""
+            ).toLowerCase();
+
+
+          return (
+            username.includes(search) ||
+            displayName.includes(search)
+          );
+
+        });
+
+
+      displayPlayers(filtered);
+
+    }
+  );
+
+
+/* =====================================================
+   MOBILE CLOSE
+===================================================== */
+
+function closeChat(){
+
+  document
+    .getElementById("chatApp")
+    .classList.remove("chat-open");
+
+
+  stopMessageRefresh();
+
+}
+
+
+/* =====================================================
+   MESSAGE AUTO REFRESH
+===================================================== */
+
+function startMessageRefresh(){
+
+  stopMessageRefresh();
+
+
+  messageRefresh =
+    setInterval(
+      () => {
+
+        if(selectedPlayer){
+
+          loadMessages();
+
+        }
+
+      },
+      3000
+    );
+
+}
+
+
+function stopMessageRefresh(){
+
+  if(messageRefresh){
+
+    clearInterval(
+      messageRefresh
+    );
+
+    messageRefresh = null;
+
+  }
+
+}
+
+
+/* =====================================================
+   SECURITY
+===================================================== */
+
+function escapeHtml(value){
+
+  return String(value)
+
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+
+    .replace(
+      /</g,
+      "&lt;"
+    )
+
+    .replace(
+      />/g,
+      "&gt;"
+    )
+
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+
+}
+
+
+/* =====================================================
+   START
+===================================================== */
+
+loadPlayers();
+
+</script>
+
+</body>
+
+</html>
+```
