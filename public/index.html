@@ -1809,170 +1809,108 @@
     <!-- =====================================================
          CREATE MATCH MODAL
     ====================================================== -->
+<!-- CREATE MATCH -->
 
-    <div
-      id="matchModal"
-      class="modal"
-      aria-hidden="true"
+<div id="matchModal" class="modal">
+
+  <div class="modal-content">
+
+    <h2>Create Match</h2>
+
+    <input
+      id="matchName"
+      type="text"
+      placeholder="Match name"
+      maxlength="50"
     >
 
-      <div class="modal-content">
+    <label class="field-label">
+      Match Format
+    </label>
 
-        <h2>
-          Create Match
-        </h2>
+    <select id="matchFormat">
 
+      <option value="1v1">1v1</option>
+      <option value="2v2">2v2</option>
+      <option value="2v3">2v3</option>
+      <option value="3v3">3v3</option>
+      <option value="4v4">4v4</option>
+      <option value="5v5">5v5</option>
+      <option value="custom">Custom</option>
 
-        <label
-          class="field-label"
-          for="matchName"
-        >
-          Match Name
-        </label>
-
-        <input
-          id="matchName"
-          type="text"
-          placeholder="Match name"
-          maxlength="50"
-        >
+    </select>
 
 
-        <label
-          class="field-label"
-          for="matchGame"
-        >
-          Game
-        </label>
+    <label class="field-label">
+      Select Game
+    </label>
 
-        <select id="matchGame">
+    <select id="matchGame">
 
-          <option value="">
-            Select game
-          </option>
+      <option value="">
+        Select a game
+      </option>
 
-          <option value="Free Fire">
-            Free Fire
-          </option>
+      <option value="Free Fire">
+        Free Fire
+      </option>
 
-          <option value="PUBG Mobile">
-            PUBG Mobile
-          </option>
+      <option value="PUBG Mobile">
+        PUBG Mobile
+      </option>
 
-          <option value="Call of Duty Mobile">
-            Call of Duty Mobile
-          </option>
+      <option value="Call of Duty Mobile">
+        Call of Duty Mobile
+      </option>
 
-        </select>
+    </select>
 
 
-        <label
-          class="field-label"
-          for="matchFormat"
-        >
-          Match Format
-        </label>
+    <label class="field-label">
+      Match Start Date & Time
+    </label>
 
-        <select id="matchFormat">
-
-          <option value="1v1">
-            1v1
-          </option>
-
-          <option value="2v2">
-            2v2
-          </option>
-
-          <option value="2v3">
-            2v3
-          </option>
-
-          <option value="3v3">
-            3v3
-          </option>
-
-          <option value="4v4">
-            4v4
-          </option>
-
-          <option value="5v5">
-            5v5
-          </option>
-
-          <option value="custom">
-            Custom
-          </option>
-
-        </select>
+    <input
+      id="matchStartTime"
+      type="datetime-local"
+    >
 
 
-        <label
-          class="field-label"
-          for="matchCreator"
-        >
-          Username
-        </label>
-
-        <input
-          id="matchCreator"
-          type="text"
-          placeholder="Your username"
-          maxlength="30"
-        >
+    <input
+      id="matchCreator"
+      type="text"
+      placeholder="Your username"
+      maxlength="30"
+    >
 
 
-        <label
-          class="field-label"
-          for="matchCoins"
-        >
-          Entry Coins
-        </label>
-
-        <input
-          id="matchCoins"
-          type="number"
-          min="0"
-          step="1"
-          placeholder="Entry coins"
-        >
+    <input
+      id="matchCoins"
+      type="number"
+      min="0"
+      step="1"
+      placeholder="Entry coins"
+    >
 
 
-        <label
-          class="field-label"
-          for="matchStartTime"
-        >
-          Start Date & Time
-        </label>
-
-        <input
-          id="matchStartTime"
-          type="datetime-local"
-        >
+    <button onclick="createMatch()">
+      Create Match
+    </button>
 
 
-        <button
-          type="button"
-          onclick="createMatch()"
-        >
-          Create Match
-        </button>
+    <button
+      class="close"
+      onclick="closeCreateMatch()"
+    >
+      Cancel
+    </button>
 
 
-        <button
-          type="button"
-          class="close"
-          onclick="closeCreateMatch()"
-        >
-          Cancel
-        </button>
+    <p id="matchError"></p>
 
+  </div>
 
-        <p id="matchError"></p>
-
-      </div>
-
-    </div>
-
+</div>
 
     <!-- =====================================================
          LOBBY MODAL
@@ -4058,250 +3996,480 @@ function updateMatchCountdowns() {
 setInterval(
   updateMatchCountdowns,
   1000
-);
-    /* =========================================================
-       JOIN MATCH
-    ========================================================= */
+);/* =========================================================
+   JOIN MATCH
+========================================================= */
 
-    async function joinMatch(matchId) {
+async function joinMatch(matchId) {
 
-      const username =
-        getUsername();
+  const username = getUsername();
 
+  if (!username) {
+    alert("Please enter your GamesArena username.");
+    return;
+  }
 
-      if (!username) {
-        return;
+  const numericMatchId = Number(matchId);
+
+  if (!Number.isInteger(numericMatchId) || numericMatchId <= 0) {
+    alert("Invalid match.");
+    return;
+  }
+
+  try {
+
+    const response = await fetch(
+      `/api/matches/${numericMatchId}/join`,
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+          username: username
+        })
       }
+    );
+
+    let data = {};
+
+    try {
+      data = await response.json();
+    }
+    catch {
+      data = {};
+    }
+
+    if (!response.ok) {
+
+      alert(
+        data.error ||
+        "Could not join match."
+      );
+
+      return;
+    }
+
+    /* Make sure username remains saved */
+
+    playerUsername = username;
+
+    localStorage.setItem(
+      "ffarena_username",
+      username
+    );
+
+    await loadMatches();
+
+    if (typeof loadPlayerProfile === "function") {
+      await loadPlayerProfile();
+    }
+
+    await openLobby(numericMatchId);
+
+  }
+  catch (error) {
+
+    console.error(
+      "Join match error:",
+      error
+    );
+
+    alert(
+      "Could not connect to GamesArena server."
+    );
+
+  }
+
+}
 
 
-      try {
+/* =========================================================
+   LOBBY
+========================================================= */
 
-        const response =
-          await fetch(
-            `/api/matches/${Number(matchId)}/join`,
-            {
+async function openLobby(matchId) {
 
-              method: "POST",
+  const numericMatchId = Number(matchId);
 
-              headers: {
-                "Content-Type":
-                  "application/json"
-              },
+  if (
+    !Number.isInteger(numericMatchId) ||
+    numericMatchId <= 0
+  ) {
 
-              body: JSON.stringify({
-                username
-              })
+    alert("Invalid match.");
 
-            }
-          );
+    return;
 
+  }
 
-        const data =
-          await response.json();
+  currentLobbyMatchId =
+    numericMatchId;
 
 
-        if (!response.ok) {
+  try {
 
-          alert(
-            data.error ||
-            "Could not join match."
-          );
-
-          return;
-
-        }
+    const response =
+      await fetch(
+        "/api/matches"
+      );
 
 
-        await loadMatches();
+    if (!response.ok) {
 
-        await loadPlayerProfile();
-
-
-        await openLobby(matchId);
-
-      }
-
-      catch (error) {
-
-        console.error(error);
-
-        alert(
-          "Could not connect to GamesArena server."
-        );
-
-      }
+      throw new Error(
+        "Could not load matches"
+      );
 
     }
 
 
-    /* =========================================================
-       LOBBY
-    ========================================================= */
-
-    async function openLobby(matchId) {
-
-      currentLobbyMatchId =
-        Number(matchId);
+    const matches =
+      await response.json();
 
 
-      try {
-
-        const response =
-          await fetch(
-            "/api/matches"
-          );
-
-
-        if (!response.ok) {
-          throw new Error(
-            "Could not load matches"
-          );
-        }
-
-
-        const matches =
-          await response.json();
-
-
-        const match =
-          matches.find(
+    const match =
+      Array.isArray(matches)
+        ? matches.find(
             item =>
               Number(item.id) ===
-              Number(matchId)
-          );
+              numericMatchId
+          )
+        : null;
 
 
-        if (!match) {
+    if (!match) {
 
-          alert(
-            "Match not found."
-          );
+      alert(
+        "Match not found."
+      );
 
-          return;
+      currentLobbyMatchId =
+        null;
 
-        }
+      return;
 
-
-        const players =
-          Array.isArray(match.players)
-            ? match.players
-            : [];
+    }
 
 
-        document.getElementById(
-          "lobbyTitle"
-        ).textContent =
-          match.name ||
-          "Match Lobby";
+    const players =
+      Array.isArray(match.players)
+        ? match.players
+        : [];
 
 
-        const game =
-          match.game ||
-          match.gameType ||
-          "Game";
+    /* -------------------------------------------------------
+       LOBBY TITLE
+    ------------------------------------------------------- */
+
+    const lobbyTitle =
+      document.getElementById(
+        "lobbyTitle"
+      );
 
 
-        document.getElementById(
-          "lobbyFormat"
-        ).textContent =
-          `🎮 ${game} • ${match.format || ""} • Entry ${Number(match.entryCoins || 0).toLocaleString()} coins`;
+    if (lobbyTitle) {
+
+      lobbyTitle.textContent =
+        match.name ||
+        "Match Lobby";
+
+    }
 
 
-        document.getElementById(
-          "lobbyPlayerCount"
-        ).textContent =
-          `${players.length} / ${Number(match.maxPlayers || 0)}`;
+    /* -------------------------------------------------------
+       GAME / FORMAT / ENTRY
+    ------------------------------------------------------- */
+
+    const lobbyFormat =
+      document.getElementById(
+        "lobbyFormat"
+      );
 
 
-        const teamA =
-          players.filter(
-            player =>
-              String(
-                player.team || "A"
-              ).toUpperCase() === "A"
-          );
+    const game =
+      match.game ||
+      match.gameType ||
+      "Game";
 
 
-        const teamB =
-          players.filter(
-            player =>
-              String(
-                player.team || ""
-              ).toUpperCase() === "B"
-          );
+    const format =
+      match.format ||
+      "";
 
 
-        document.getElementById(
-          "teamAPlayers"
-        ).innerHTML =
-          createLobbyPlayers(teamA);
+    const entryCoins =
+      Number(
+        match.entryCoins ||
+        match.entry_coins ||
+        0
+      );
 
 
-        document.getElementById(
-          "teamBPlayers"
-        ).innerHTML =
-          createLobbyPlayers(teamB);
+    if (lobbyFormat) {
+
+      lobbyFormat.textContent =
+        `🎮 ${game} • ${format} • Entry ${entryCoins.toLocaleString()} coins`;
+
+    }
 
 
-        const startButton =
-          document.getElementById(
-            "startMatchButton"
-          );
+    /* -------------------------------------------------------
+       PLAYER COUNT
+    ------------------------------------------------------- */
+
+    const lobbyPlayerCount =
+      document.getElementById(
+        "lobbyPlayerCount"
+      );
 
 
-        if (
+    const maxPlayers =
+      Number(
+        match.maxPlayers ||
+        match.max_players ||
+        0
+      );
+
+
+    if (lobbyPlayerCount) {
+
+      lobbyPlayerCount.textContent =
+        maxPlayers > 0
+          ? `${players.length} / ${maxPlayers}`
+          : `${players.length} players`;
+
+    }
+
+
+    /* -------------------------------------------------------
+       TEAM A
+    ------------------------------------------------------- */
+
+    const teamA =
+      players.filter(
+        player =>
           String(
-            match.status || ""
-          ).toUpperCase() === "FULL"
-        ) {
-
-          startButton.disabled =
-            false;
-
-          startButton.textContent =
-            "🔴 START MATCH";
-
-        }
-
-        else {
-
-          startButton.disabled =
-            true;
-
-          startButton.textContent =
-            "WAITING FOR PLAYERS";
-
-        }
+            player.team ||
+            "A"
+          )
+          .trim()
+          .toUpperCase() === "A"
+      );
 
 
-        openModal("lobbyModal");
+    /* -------------------------------------------------------
+       TEAM B
+    ------------------------------------------------------- */
+
+    const teamB =
+      players.filter(
+        player =>
+          String(
+            player.team ||
+            ""
+          )
+          .trim()
+          .toUpperCase() === "B"
+      );
+
+
+    const teamAPlayers =
+      document.getElementById(
+        "teamAPlayers"
+      );
+
+
+    if (teamAPlayers) {
+
+      teamAPlayers.innerHTML =
+        createLobbyPlayers(
+          teamA
+        );
+
+    }
+
+
+    const teamBPlayers =
+      document.getElementById(
+        "teamBPlayers"
+      );
+
+
+    if (teamBPlayers) {
+
+      teamBPlayers.innerHTML =
+        createLobbyPlayers(
+          teamB
+        );
+
+    }
+
+
+    /* -------------------------------------------------------
+       START MATCH BUTTON
+    ------------------------------------------------------- */
+
+    const startButton =
+      document.getElementById(
+        "startMatchButton"
+      );
+
+
+    if (startButton) {
+
+      const status =
+        String(
+          match.status ||
+          ""
+        )
+        .trim()
+        .toUpperCase();
+
+
+      /*
+        Only allow the button when the match
+        is actually full.
+      */
+
+      if (status === "FULL") {
+
+        startButton.disabled =
+          false;
+
+        startButton.textContent =
+          "🔴 START MATCH";
 
       }
 
-      catch (error) {
+      else if (
+        status === "LIVE" ||
+        status === "STARTED"
+      ) {
 
-        console.error(error);
+        startButton.disabled =
+          true;
 
-        alert(
-          "Could not load match lobby."
-        );
+        startButton.textContent =
+          "MATCH IS LIVE";
+
+      }
+
+      else if (
+        status === "FINISHED"
+      ) {
+
+        startButton.disabled =
+          true;
+
+        startButton.textContent =
+          "MATCH FINISHED";
+
+      }
+
+      else {
+
+        startButton.disabled =
+          true;
+
+        startButton.textContent =
+          "WAITING FOR PLAYERS";
 
       }
 
     }
 
 
-    function createLobbyPlayers(players) {
+    /* -------------------------------------------------------
+       OPEN LOBBY
+    ------------------------------------------------------- */
+
+    openModal(
+      "lobbyModal"
+    );
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "Lobby error:",
+      error
+    );
+
+    alert(
+      "Could not load match lobby."
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   CREATE LOBBY PLAYERS
+========================================================= */
+
+function createLobbyPlayers(players) {
+
+  if (
+    !Array.isArray(players) ||
+    players.length === 0
+  ) {
+
+    return `
+
+      <div class="lobby-player">
+        Empty slot
+      </div>
+
+    `;
+
+  }
+
+
+  return players
+    .map(player => {
+
+      const username =
+        escapeHTML(
+          player.username ||
+          "Player"
+        );
+
+
+      const status =
+        String(
+          player.status ||
+          "ALIVE"
+        )
+        .trim()
+        .toUpperCase();
+
 
       if (
-        !players ||
-        players.length === 0
+        status ===
+        "ELIMINATED"
       ) {
 
         return `
 
-          <div class="lobby-player">
-            Empty slot
+          <div
+            class="lobby-player eliminated"
+          >
+
+            ❌
+
+            <s>
+              ${username}
+            </s>
+
+            <small>
+              ELIMINATED
+            </small>
+
           </div>
 
         `;
@@ -4309,7 +4477,621 @@ setInterval(
       }
 
 
-      return players
+      return `
+
+        <div
+          class="lobby-player alive"
+        >
+
+          🟢
+          ${username}
+
+        </div>
+
+      `;
+
+    })
+    .join("");
+
+}
+
+
+/* =========================================================
+   CLOSE LOBBY
+========================================================= */
+
+function closeLobby() {
+
+  closeModal(
+    "lobbyModal"
+  );
+
+  currentLobbyMatchId =
+    null;
+
+}
+
+
+/* =========================================================
+   START MATCH
+========================================================= */
+
+async function startMatch() {
+
+  const matchId =
+    currentLobbyMatchId;
+
+
+  if (!matchId) {
+
+    alert(
+      "No match lobby is open."
+    );
+
+    return;
+
+  }
+
+
+  const username =
+    getUsername();
+
+
+  if (!username) {
+
+    alert(
+      "Please enter your GamesArena username."
+    );
+
+    return;
+
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `/api/matches/${Number(matchId)}/start`,
+        {
+
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            username: username
+          })
+
+        }
+      );
+
+
+    let data = {};
+
+    try {
+      data = await response.json();
+    }
+    catch {
+      data = {};
+    }
+
+
+    if (!response.ok) {
+
+      alert(
+        data.error ||
+        "Could not start match."
+      );
+
+      return;
+
+    }
+
+
+    closeLobby();
+
+
+    await loadMatches();
+
+
+    await openLive(
+      Number(matchId)
+    );
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "Start match error:",
+      error
+    );
+
+    alert(
+      "Could not connect to GamesArena server."
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   LIVE MATCH
+========================================================= */
+
+async function openLive(matchId) {
+
+  const numericMatchId =
+    Number(matchId);
+
+
+  if (
+    !Number.isInteger(numericMatchId) ||
+    numericMatchId <= 0
+  ) {
+
+    alert(
+      "Invalid live match."
+    );
+
+    return;
+
+  }
+
+
+  currentLiveMatchId =
+    numericMatchId;
+
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/matches"
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Could not load matches"
+      );
+
+    }
+
+
+    const matches =
+      await response.json();
+
+
+    const match =
+      Array.isArray(matches)
+        ? matches.find(
+            item =>
+              Number(item.id) ===
+              numericMatchId
+          )
+        : null;
+
+
+    if (!match) {
+
+      alert(
+        "Match not found."
+      );
+
+      currentLiveMatchId =
+        null;
+
+      return;
+
+    }
+
+
+    /* -------------------------------------------------------
+       LIVE TITLE
+    ------------------------------------------------------- */
+
+    const liveTitle =
+      document.getElementById(
+        "liveTitle"
+      );
+
+
+    if (liveTitle) {
+
+      liveTitle.textContent =
+        match.name ||
+        "Live Match";
+
+    }
+
+
+    /* -------------------------------------------------------
+       GAME / FORMAT / STATUS
+    ------------------------------------------------------- */
+
+    const liveFormat =
+      document.getElementById(
+        "liveFormat"
+      );
+
+
+    const game =
+      match.game ||
+      match.gameType ||
+      "Game";
+
+
+    const format =
+      match.format ||
+      "";
+
+
+    const status =
+      String(
+        match.status ||
+        "LIVE"
+      )
+      .trim()
+      .toUpperCase();
+
+
+    if (liveFormat) {
+
+      liveFormat.textContent =
+        `🎮 ${game} • ${format} • ${status}`;
+
+    }
+
+
+    /* -------------------------------------------------------
+       RENDER LIVE CONTENT
+    ------------------------------------------------------- */
+
+    renderLivePlayers(
+      match
+    );
+
+
+    renderScreenTiles(
+      match
+    );
+
+
+    updateStreamPermission(
+      match
+    );
+
+
+    openModal(
+      "liveModal"
+    );
+
+
+    /* -------------------------------------------------------
+       LOAD CHAT
+    ------------------------------------------------------- */
+
+    if (
+      typeof loadChat ===
+      "function"
+    ) {
+
+      await loadChat();
+
+    }
+
+
+    /* -------------------------------------------------------
+       REFRESH LIVE MATCH
+    ------------------------------------------------------- */
+
+    clearInterval(
+      liveRefreshTimer
+    );
+
+
+    liveRefreshTimer =
+      setInterval(
+        refreshLiveMatch,
+        3000
+      );
+
+
+    /* -------------------------------------------------------
+       REFRESH CHAT
+    ------------------------------------------------------- */
+
+    clearInterval(
+      chatRefreshTimer
+    );
+
+
+    if (
+      typeof loadChat ===
+      "function"
+    ) {
+
+      chatRefreshTimer =
+        setInterval(
+          loadChat,
+          2500
+        );
+
+    }
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "Open live match error:",
+      error
+    );
+
+    alert(
+      "Could not load live match."
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   REFRESH LIVE MATCH
+========================================================= */
+
+async function refreshLiveMatch() {
+
+  if (!currentLiveMatchId) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/matches"
+      );
+
+
+    if (!response.ok) {
+      return;
+    }
+
+
+    const matches =
+      await response.json();
+
+
+    const match =
+      Array.isArray(matches)
+        ? matches.find(
+            item =>
+              Number(item.id) ===
+              Number(currentLiveMatchId)
+          )
+        : null;
+
+
+    if (!match) {
+      return;
+    }
+
+
+    /* -------------------------------------------------------
+       UPDATE TITLE / FORMAT
+    ------------------------------------------------------- */
+
+    const liveTitle =
+      document.getElementById(
+        "liveTitle"
+      );
+
+
+    if (liveTitle) {
+
+      liveTitle.textContent =
+        match.name ||
+        "Live Match";
+
+    }
+
+
+    const liveFormat =
+      document.getElementById(
+        "liveFormat"
+      );
+
+
+    const game =
+      match.game ||
+      match.gameType ||
+      "Game";
+
+
+    const format =
+      match.format ||
+      "";
+
+
+    const status =
+      String(
+        match.status ||
+        "LIVE"
+      )
+      .trim()
+      .toUpperCase();
+
+
+    if (liveFormat) {
+
+      liveFormat.textContent =
+        `🎮 ${game} • ${format} • ${status}`;
+
+    }
+
+
+    /* -------------------------------------------------------
+       UPDATE LIVE PLAYERS
+    ------------------------------------------------------- */
+
+    renderLivePlayers(
+      match
+    );
+
+
+    /* -------------------------------------------------------
+       IMPORTANT:
+       renderScreenTiles() does NOT destroy
+       existing video elements.
+    ------------------------------------------------------- */
+
+    renderScreenTiles(
+      match
+    );
+
+
+    updateStreamPermission(
+      match
+    );
+
+
+    /* -------------------------------------------------------
+       FINISHED MATCH
+    ------------------------------------------------------- */
+
+    if (
+      status ===
+      "FINISHED"
+    ) {
+
+      /*
+        Keep the result visible.
+        Stop refresh timers because
+        the match is no longer live.
+      */
+
+      clearInterval(
+        liveRefreshTimer
+      );
+
+      liveRefreshTimer =
+        null;
+
+    }
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "Live refresh error:",
+      error
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   CLOSE LIVE MATCH
+========================================================= */
+
+function closeLive() {
+
+  /*
+    Stop screen sharing only if
+    there is actually a stream.
+  */
+
+  if (
+    typeof stopScreenShare ===
+    "function"
+  ) {
+
+    stopScreenShare();
+
+  }
+
+
+  clearInterval(
+    liveRefreshTimer
+  );
+
+
+  clearInterval(
+    chatRefreshTimer
+  );
+
+
+  liveRefreshTimer =
+    null;
+
+
+  chatRefreshTimer =
+    null;
+
+
+  closeModal(
+    "liveModal"
+  );
+
+
+  currentLiveMatchId =
+    null;
+
+}
+
+
+/* =========================================================
+   LIVE PLAYERS
+========================================================= */
+
+function renderLivePlayers(match) {
+
+  const container =
+    document.getElementById(
+      "livePlayers"
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  const players =
+    Array.isArray(match?.players)
+      ? match.players
+      : [];
+
+
+  if (!players.length) {
+
+    container.innerHTML = `
+
+      <div class="empty">
+        No players yet.
+      </div>
+
+    `;
+
+  }
+
+  else {
+
+    container.innerHTML =
+      players
         .map(player => {
 
           const username =
@@ -4319,17 +5101,24 @@ setInterval(
             );
 
 
-          if (
+          const status =
             String(
-              player.status || ""
-            ).toUpperCase() ===
+              player.status ||
+              "ALIVE"
+            )
+            .trim()
+            .toUpperCase();
+
+
+          if (
+            status ===
             "ELIMINATED"
           ) {
 
             return `
 
               <div
-                class="lobby-player eliminated"
+                class="live-player eliminated"
               >
 
                 ❌
@@ -4338,9 +5127,7 @@ setInterval(
                   ${username}
                 </s>
 
-                <small>
-                  ELIMINATED
-                </small>
+                — ELIMINATED
 
               </div>
 
@@ -4352,7 +5139,7 @@ setInterval(
           return `
 
             <div
-              class="lobby-player alive"
+              class="live-player alive"
             >
 
               🟢
@@ -4365,1043 +5152,518 @@ setInterval(
         })
         .join("");
 
-    }
+  }
 
 
-    function closeLobby() {
+  /* -------------------------------------------------------
+     SPECTATOR COUNT
+  ------------------------------------------------------- */
 
-      closeModal("lobbyModal");
+  const spectatorCount =
+    document.getElementById(
+      "spectatorCount"
+    );
 
-      currentLobbyMatchId =
-        null;
 
-    }
+  if (
+    spectatorCount &&
+    typeof match.spectatorCount !==
+    "undefined"
+  ) {
 
-
-    /* =========================================================
-       START MATCH
-    ========================================================= */
-
-    async function startMatch() {
-
-      const matchId =
-        currentLobbyMatchId;
-
-
-      if (!matchId) {
-        return;
-      }
-
-
-      try {
-
-        const response =
-          await fetch(
-            `/api/matches/${Number(matchId)}/start`,
-            {
-
-              method: "POST",
-
-              headers: {
-                "Content-Type":
-                  "application/json"
-              }
-
-            }
-          );
-
-
-        const data =
-          await response.json();
-
-
-        if (!response.ok) {
-
-          alert(
-            data.error ||
-            "Could not start match."
-          );
-
-          return;
-
-        }
-
-
-        closeLobby();
-
-        await loadMatches();
-
-        await openLive(matchId);
-
-      }
-
-      catch (error) {
-
-        console.error(error);
-
-        alert(
-          "Could not connect to GamesArena server."
-        );
-
-      }
-
-    }
-
-
-    /* =========================================================
-       LIVE MATCH
-    ========================================================= */
-
-    async function openLive(matchId) {
-
-      currentLiveMatchId =
-        Number(matchId);
-
-
-      try {
-
-        const response =
-          await fetch(
-            "/api/matches"
-          );
-
-
-        if (!response.ok) {
-          throw new Error(
-            "Could not load matches"
-          );
-        }
-
-
-        const matches =
-          await response.json();
-
-
-        const match =
-          matches.find(
-            item =>
-              Number(item.id) ===
-              Number(matchId)
-          );
-
-
-        if (!match) {
-
-          alert(
-            "Match not found."
-          );
-
-          return;
-
-        }
-
-
-        document.getElementById(
-          "liveTitle"
-        ).textContent =
-          match.name ||
-          "Live Match";
-
-
-        const game =
-          match.game ||
-          match.gameType ||
-          "Game";
-
-
-        document.getElementById(
-          "liveFormat"
-        ).textContent =
-          `🎮 ${game} • ${match.format || ""} • ${String(match.status || "LIVE").toUpperCase()}`;
-
-
-        renderLivePlayers(match);
-
-        renderScreenTiles(match);
-
-        updateStreamPermission(match);
-
-
-        openModal("liveModal");
-
-
-        await loadChat();
-
-
-        clearInterval(
-          liveRefreshTimer
-        );
-
-
-        liveRefreshTimer =
-          setInterval(
-            refreshLiveMatch,
-            3000
-          );
-
-
-        clearInterval(
-          chatRefreshTimer
-        );
-
-
-        chatRefreshTimer =
-          setInterval(
-            loadChat,
-            2500
-          );
-
-      }
-
-      catch (error) {
-
-        console.error(error);
-
-        alert(
-          "Could not load live match."
-        );
-
-      }
-
-    }
-
-
-    async function refreshLiveMatch() {
-
-      if (!currentLiveMatchId) {
-        return;
-      }
-
-
-      try {
-
-        const response =
-          await fetch(
-            "/api/matches"
-          );
-
-
-        if (!response.ok) {
-          return;
-        }
-
-
-        const matches =
-          await response.json();
-
-
-        const match =
-          matches.find(
-            item =>
-              Number(item.id) ===
-              Number(currentLiveMatchId)
-          );
-
-
-        if (!match) {
-          return;
-        }
-
-
-        renderLivePlayers(match);
-
-        renderScreenTiles(match);
-
-        updateStreamPermission(match);
-
-      }
-
-      catch (error) {
-
-        console.error(
-          "Live refresh error:",
-          error
-        );
-
-      }
-
-    }
-
-
-    function closeLive() {
-
-      stopScreenShare();
-
-
-      clearInterval(
-        liveRefreshTimer
+    spectatorCount.textContent =
+      Number(
+        match.spectatorCount ||
+        0
       );
 
-      clearInterval(
-        chatRefreshTimer
+  }
+
+
+  /* -------------------------------------------------------
+     REWARD / WINNER
+  ------------------------------------------------------- */
+
+  const rewardBox =
+    document.getElementById(
+      "rewardBox"
+    );
+
+
+  if (!rewardBox) {
+    return;
+  }
+
+
+  const winner =
+    match.winner ||
+    match.winnerUsername ||
+    "";
+
+
+  const reward =
+    Number(
+      match.rewardCoins ||
+      match.potentialReward ||
+      0
+    );
+
+
+  const matchStatus =
+    String(
+      match.status ||
+      ""
+    )
+    .trim()
+    .toUpperCase();
+
+
+  if (
+    matchStatus ===
+      "FINISHED" &&
+    winner
+  ) {
+
+    rewardBox.style.display =
+      "block";
+
+
+    const rewardWinner =
+      document.getElementById(
+        "rewardWinner"
       );
 
 
-      liveRefreshTimer =
-        null;
+    if (rewardWinner) {
 
-      chatRefreshTimer =
-        null;
-
-
-      closeModal("liveModal");
-
-
-      currentLiveMatchId =
-        null;
+      rewardWinner.textContent =
+        `🏆 Winner: ${winner}`;
 
     }
 
 
-    /* =========================================================
-       LIVE PLAYERS
-    ========================================================= */
-
-    function renderLivePlayers(match) {
-
-      const container =
-        document.getElementById(
-          "livePlayers"
-        );
+    const rewardAmount =
+      document.getElementById(
+        "rewardAmount"
+      );
 
 
-      const players =
-        Array.isArray(match.players)
-          ? match.players
-          : [];
+    if (rewardAmount) {
+
+      rewardAmount.textContent =
+        `🪙 ${reward.toLocaleString()} Coins`;
+
+    }
+
+  }
+
+  else {
+
+    rewardBox.style.display =
+      "none";
+
+  }
+
+}
 
 
-      if (!players.length) {
+/* =========================================================
+   CHECK IF CURRENT USER IS A MATCH PLAYER
+========================================================= */
 
-        container.innerHTML = `
-          <div class="empty">
-            No players yet.
+function isCurrentUserMatchPlayer(match) {
+
+  /*
+    Always use the same username source
+    as getUsername().
+  */
+
+  let user =
+    String(
+      playerUsername ||
+      localStorage.getItem(
+        "ffarena_username"
+      ) ||
+      ""
+    )
+    .trim()
+    .toLowerCase();
+
+
+  if (!user) {
+    return false;
+  }
+
+
+  const players =
+    Array.isArray(match?.players)
+      ? match.players
+      : [];
+
+
+  return players.some(
+    player =>
+      String(
+        player.username ||
+        ""
+      )
+      .trim()
+      .toLowerCase() ===
+      user
+  );
+
+}
+
+
+/* =========================================================
+   SCREEN SHARE PERMISSION
+========================================================= */
+
+function updateStreamPermission(match) {
+
+  const controls =
+    document.getElementById(
+      "streamControls"
+    );
+
+
+  const watchOnly =
+    document.getElementById(
+      "watchOnlyMessage"
+    );
+
+
+  const canShare =
+    isCurrentUserMatchPlayer(
+      match
+    );
+
+
+  /* -------------------------------------------------------
+     PLAYER CONTROLS
+  ------------------------------------------------------- */
+
+  if (controls) {
+
+    controls.style.display =
+      canShare
+        ? "grid"
+        : "none";
+
+  }
+
+
+  /* -------------------------------------------------------
+     SPECTATOR MESSAGE
+  ------------------------------------------------------- */
+
+  if (watchOnly) {
+
+    watchOnly.style.display =
+      canShare
+        ? "none"
+        : "block";
+
+  }
+
+}
+
+
+/* =========================================================
+   SCREEN TILE ID
+========================================================= */
+
+function getScreenId(username) {
+
+  return (
+    "screen-" +
+    encodeURIComponent(
+      String(username || "Player")
+    )
+  );
+
+}
+
+
+/* =========================================================
+   SCREEN TILES
+========================================================= */
+
+function renderScreenTiles(match) {
+
+  const container =
+    document.getElementById(
+      "screenGrid"
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  const players =
+    Array.isArray(match?.players)
+      ? match.players
+      : [];
+
+
+  /* -------------------------------------------------------
+     NO PLAYERS
+  ------------------------------------------------------- */
+
+  if (!players.length) {
+
+    /*
+      Do not destroy a local screen-share video
+      if one somehow exists.
+    */
+
+    if (
+      !screenStream &&
+      !container.querySelector(
+        ".screen-tile[data-player]"
+      )
+    ) {
+
+      container.innerHTML = `
+
+        <div class="screen-tile">
+
+          <div class="screen-offline">
+            Waiting for players...
           </div>
-        `;
 
-      }
+        </div>
 
-      else {
-
-        container.innerHTML =
-          players
-            .map(player => {
-
-              const username =
-                escapeHTML(
-                  player.username ||
-                  "Player"
-                );
-
-
-              if (
-                String(
-                  player.status || ""
-                ).toUpperCase() ===
-                "ELIMINATED"
-              ) {
-
-                return `
-
-                  <div
-                    class="live-player eliminated"
-                  >
-
-                    ❌
-
-                    <s>
-                      ${username}
-                    </s>
-
-                    — ELIMINATED
-
-                  </div>
-
-                `;
-
-              }
-
-
-              return `
-
-                <div
-                  class="live-player alive"
-                >
-
-                  🟢
-                  ${username}
-
-                </div>
-
-              `;
-
-            })
-            .join("");
-
-      }
-
-
-      if (
-        typeof match.spectatorCount !==
-        "undefined"
-      ) {
-
-        document.getElementById(
-          "spectatorCount"
-        ).textContent =
-          Number(
-            match.spectatorCount || 0
-          );
-
-      }
-
-
-      /* Reward display */
-
-      const rewardBox =
-        document.getElementById(
-          "rewardBox"
-        );
-
-
-      const winner =
-        match.winner ||
-        match.winnerUsername;
-
-
-      const reward =
-        Number(
-          match.rewardCoins ||
-          match.potentialReward ||
-          0
-        );
-
-
-      if (
-        String(
-          match.status || ""
-        ).toUpperCase() ===
-          "FINISHED" &&
-        winner
-      ) {
-
-        rewardBox.style.display =
-          "block";
-
-
-        document.getElementById(
-          "rewardWinner"
-        ).textContent =
-          `🏆 Winner: ${escapeHTML(winner)}`;
-
-
-        document.getElementById(
-          "rewardAmount"
-        ).textContent =
-          `🪙 ${reward.toLocaleString()} Coins`;
-
-      }
-
-      else {
-
-        rewardBox.style.display =
-          "none";
-
-      }
+      `;
 
     }
 
+    return;
 
-    /* =========================================================
-       SCREEN PERMISSION
-    ========================================================= */
-
-    function isCurrentUserMatchPlayer(match) {
-
-      const user =
-        String(
-          playerUsername || ""
-        )
-        .trim()
-        .toLowerCase();
+  }
 
 
-      if (!user) {
-        return false;
-      }
-
-
-      const players =
-        Array.isArray(match?.players)
-          ? match.players
-          : [];
-
-
-      return players.some(
+  const wantedUsers =
+    new Set(
+      players.map(
         player =>
           String(
-            player.username || ""
+            player.username ||
+            "Player"
           )
-          .trim()
-          .toLowerCase() === user
+      )
+    );
+
+
+  /* -------------------------------------------------------
+     REMOVE ONLY PLAYERS THAT LEFT
+  ------------------------------------------------------- */
+
+  [
+    ...container.querySelectorAll(
+      ".screen-tile[data-player]"
+    )
+  ]
+  .forEach(tile => {
+
+    const tilePlayer =
+      String(
+        tile.dataset.player ||
+        ""
       );
 
-    }
 
-
-    function updateStreamPermission(match) {
-
-      const controls =
-        document.getElementById(
-          "streamControls"
-        );
-
-      const watchOnly =
-        document.getElementById(
-          "watchOnlyMessage"
-        );
-
-
-      const canShare =
-        isCurrentUserMatchPlayer(
-          match
-        );
-
-
-      if (controls) {
-
-        controls.style.display =
-          canShare
-            ? "grid"
-            : "none";
-
-      }
-
-
-      if (watchOnly) {
-
-        watchOnly.style.display =
-          canShare
-            ? "none"
-            : "block";
-
-      }
-
-    }
-
-
-    /* =========================================================
-       SCREEN TILES
-    ========================================================= */
-
-    function getScreenId(username) {
-
-      return (
-        "screen-" +
-        encodeURIComponent(
-          username
-        )
-      );
-
-    }
-
-
-    function renderScreenTiles(match) {
-
-      const container =
-        document.getElementById(
-          "screenGrid"
-        );
-
-
-      if (!container) {
-        return;
-      }
-
-
-      const players =
-        Array.isArray(match?.players)
-          ? match.players
-          : [];
-
-
-      if (!players.length) {
-
-        container.innerHTML = `
-
-          <div class="screen-tile">
-
-            <div class="screen-offline">
-              Waiting for players...
-            </div>
-
-          </div>
-
-        `;
-
-        return;
-
-      }
-
-
-      const wantedUsers =
-        new Set(
-          players.map(
-            player =>
-              String(
-                player.username ||
-                "Player"
-              )
-          )
-        );
-
+    if (
+      !wantedUsers.has(
+        tilePlayer
+      )
+    ) {
 
       /*
-        Do not destroy existing video elements.
-
-        This is important because destroying a video
-        element would also remove its MediaStream.
+        If this is our own tile and we
+        still have a local stream,
+        don't remove it.
       */
 
+      const isOwnTile =
+        playerUsername &&
+        tilePlayer.toLowerCase() ===
+        String(
+          playerUsername
+        ).toLowerCase();
+
+
+      if (
+        !isOwnTile ||
+        !screenStream
+      ) {
+
+        tile.remove();
+
+      }
+
+    }
+
+  });
+
+
+  /* -------------------------------------------------------
+     CREATE / UPDATE PLAYER TILES
+  ------------------------------------------------------- */
+
+  players.forEach(player => {
+
+    const username =
+      String(
+        player.username ||
+        "Player"
+      );
+
+
+    const id =
+      getScreenId(
+        username
+      );
+
+
+    let tile =
       [
         ...container.querySelectorAll(
           ".screen-tile[data-player]"
         )
       ]
-      .forEach(tile => {
-
-        if (
-          !wantedUsers.has(
-            tile.dataset.player
-          )
-        ) {
-
-          tile.remove();
-
-        }
-
-      });
+      .find(
+        element =>
+          element.dataset.player ===
+          username
+      );
 
 
-      players.forEach(player => {
+    /* -----------------------------------------------------
+       CREATE TILE
+    ----------------------------------------------------- */
 
-        const username =
-          String(
-            player.username ||
-            "Player"
-          );
+    if (!tile) {
 
-
-        const id =
-          getScreenId(
-            username
-          );
+      tile =
+        document.createElement(
+          "div"
+        );
 
 
-        let tile =
-          [
-            ...container.querySelectorAll(
-              ".screen-tile[data-player]"
-            )
-          ]
-          .find(
-            element =>
-              element.dataset.player ===
-              username
-          );
+      tile.className =
+        "screen-tile";
 
 
-        if (!tile) {
-
-          tile =
-            document.createElement(
-              "div"
-            );
+      tile.dataset.player =
+        username;
 
 
-          tile.className =
-            "screen-tile";
+      tile.innerHTML = `
+
+        <div class="screen-name">
+          🎮
+          ${escapeHTML(username)}
+        </div>
 
 
-          tile.dataset.player =
-            username;
+        <video
+          id="${id}"
+          autoplay
+          playsinline
+          muted
+        ></video>
 
 
-          tile.innerHTML = `
+        <div
+          class="screen-offline"
+          id="${id}-offline"
+        >
+          📺<br>
+          Waiting for
+          ${escapeHTML(username)}
+          to share their screen...
+        </div>
 
-            <div class="screen-name">
-              🎮
-              ${escapeHTML(username)}
-            </div>
-
-
-            <video
-              id="${id}"
-              autoplay
-              playsinline
-              muted
-            ></video>
+      `;
 
 
-            <div
-              class="screen-offline"
-              id="${id}-offline"
-            >
-              📺<br>
-              Waiting for
-              ${escapeHTML(username)}
-              to share their screen...
-            </div>
+      container.appendChild(
+        tile
+      );
 
-          `;
+    }
 
 
-          container.appendChild(
-            tile
-          );
+    /* -----------------------------------------------------
+       FIND VIDEO
+    ----------------------------------------------------- */
 
-        }
+    const video =
+      document.getElementById(
+        id
+      );
 
-      });
+
+    const offline =
+      document.getElementById(
+        `${id}-offline`
+      );
 
 
-      /*
-        Re-attach our local stream after rendering.
-      */
+    /*
+      Check whether this player is currently
+      marked as streaming by the backend.
+    */
 
-      if (
-        screenStream &&
+    const isStreaming =
+      Boolean(
+        player.streaming ||
+        player.isStreaming ||
+        player.screenSharing
+      );
+
+
+    /* -----------------------------------------------------
+       LOCAL USER'S STREAM
+    ----------------------------------------------------- */
+
+    if (
+      screenStream &&
+      playerUsername &&
+      username.toLowerCase() ===
+      String(
         playerUsername
-      ) {
-
-        const video =
-          document.getElementById(
-            getScreenId(
-              playerUsername
-            )
-          );
-
-
-        const offline =
-          document.getElementById(
-            `${getScreenId(playerUsername)}-offline`
-          );
-
-
-        if (video) {
-
-          video.srcObject =
-            screenStream;
-
-          video.muted = true;
-
-          video.play().catch(
-            () => {}
-          );
-
-        }
-
-
-        if (offline) {
-
-          offline.style.display =
-            "none";
-
-        }
-
-      }
-
-    }
-
-
-    /* =========================================================
-       SCREEN SHARING
-    ========================================================= */
-
-    async function startScreenShare() {
-
-      if (!currentLiveMatchId) {
-
-        alert(
-          "Open a live match first."
-        );
-
-        return;
-
-      }
-
-
-      if (
-        !navigator.mediaDevices ||
-        !navigator.mediaDevices.getDisplayMedia
-      ) {
-
-        alert(
-          "Screen sharing is not supported by this browser."
-        );
-
-        return;
-
-      }
-
-
-      try {
-
-        /*
-          Verify that the current user is actually
-          registered in the match.
-        */
-
-        const response =
-          await fetch(
-            "/api/matches"
-          );
-
-
-        if (!response.ok) {
-
-          alert(
-            "Could not verify match player."
-          );
-
-          return;
-
-        }
-
-
-        const matches =
-          await response.json();
-
-
-        const match =
-          matches.find(
-            item =>
-              Number(item.id) ===
-              Number(currentLiveMatchId)
-          );
-
-
-        if (
-          !match ||
-          !isCurrentUserMatchPlayer(
-            match
-          )
-        ) {
-
-          alert(
-            "Only players registered in this match can share their screen."
-          );
-
-          return;
-
-        }
-
-
-        screenStream =
-          await navigator
-            .mediaDevices
-            .getDisplayMedia({
-
-              video: true,
-
-              audio: true
-
-            });
-
-
-        const video =
-          document.getElementById(
-            getScreenId(
-              playerUsername
-            )
-          );
-
-
-        const offline =
-          document.getElementById(
-            `${getScreenId(playerUsername)}-offline`
-          );
-
-
-        if (video) {
-
-          video.srcObject =
-            screenStream;
-
-          video.muted = true;
-
-          video.style.display =
-            "block";
-
-          video.play().catch(
-            () => {}
-          );
-
-        }
-
-
-        if (offline) {
-
-          offline.style.display =
-            "none";
-
-        }
-
-
-        document.getElementById(
-          "startStreamButton"
-        ).disabled = true;
-
-
-        document.getElementById(
-          "stopStreamButton"
-        ).disabled = false;
-
-
-        const videoTrack =
-          screenStream.getVideoTracks()[0];
-
-
-        if (videoTrack) {
-
-          videoTrack.addEventListener(
-            "ended",
-            () => {
-              stopScreenShare();
-            },
-            {
-              once: true
-            }
-          );
-
-        }
-
-
-        /*
-          Tell backend that this player
-          has started streaming.
-
-          The actual video should later be
-          handled through WebRTC/signaling,
-          not uploaded directly to the server.
-        */
-
-        try {
-
-          await fetch(
-            `/api/matches/${Number(currentLiveMatchId)}/stream`,
-            {
-
-              method: "POST",
-
-              headers: {
-                "Content-Type":
-                  "application/json"
-              },
-
-              body: JSON.stringify({
-
-                username:
-                  playerUsername,
-
-                streaming:
-                  true
-
-              })
-
-            }
-          );
-
-        }
-
-        catch (error) {
-
-          console.warn(
-            "Stream registration unavailable:",
-            error
-          );
-
-        }
-
-      }
-
-      catch (error) {
-
-        console.error(
-          "Screen share error:",
-          error
-        );
-
-
-        screenStream =
-          null;
-
-
-        document.getElementById(
-          "startStreamButton"
-        ).disabled = false;
-
-
-        document.getElementById(
-          "stopStreamButton"
-        ).disabled = true;
-
-
-        if (
-          error &&
-          error.name ===
-          "NotAllowedError"
-        ) {
-
-          return;
-
-        }
-
-
-        alert(
-          "Screen sharing was cancelled or could not start."
-        );
-
-      }
-
-    }
-
-
-    async function stopScreenShare() {
-
-      if (screenStream) {
-
-        screenStream
-          .getTracks()
-          .forEach(
-            track =>
-              track.stop()
-          );
-
-        screenStream =
-          null;
-
-      }
-
-
-      const video =
-        document.getElementById(
-          getScreenId(
-            playerUsername
-          )
-        );
-
-
-      const offline =
-        document.getElementById(
-          `${getScreenId(playerUsername)}-offline`
-        );
-
+      ).toLowerCase()
+    ) {
 
       if (video) {
 
-        video.srcObject =
-          null;
+        /*
+          Only assign the stream if it
+          isn't already attached.
+        */
+
+        if (
+          video.srcObject !==
+          screenStream
+        ) {
+
+          video.srcObject =
+            screenStream;
+
+        }
+
+
+        video.muted =
+          true;
+
+
+        video.play().catch(
+          () => {}
+        );
 
       }
 
@@ -5409,306 +5671,1307 @@ setInterval(
       if (offline) {
 
         offline.style.display =
-          "flex";
+          "none";
+
+      }
+
+      return;
+
+    }
+
+
+    /* -----------------------------------------------------
+       OTHER PLAYER STREAM
+    ----------------------------------------------------- */
+
+    /*
+      The actual remote WebRTC stream,
+      when implemented, can be attached
+      to this video element by the
+      signaling/WebRTC code.
+    */
+
+    if (
+      isStreaming &&
+      video
+    ) {
+
+      video.style.display =
+        "block";
+
+
+      if (offline) {
+
+        offline.style.display =
+          "none";
+
+      }
+
+    }
+
+    else {
+
+      if (video) {
+
+        video.style.display =
+          "block";
 
       }
 
 
-      const startButton =
-        document.getElementById(
-          "startStreamButton"
-        );
+      if (offline) {
 
+        offline.style.display =
+          "block";
 
-      const stopButton =
-        document.getElementById(
-          "stopStreamButton"
-        );
-
-
-      if (startButton) {
-        startButton.disabled =
-          false;
       }
 
+    }
 
-      if (stopButton) {
-        stopButton.disabled =
-          true;
-      }
+  });
 
 
-      if (
-        currentLiveMatchId &&
+  /* -------------------------------------------------------
+     RE-ATTACH LOCAL STREAM AFTER REFRESH
+  ------------------------------------------------------- */
+
+  if (
+    screenStream &&
+    playerUsername
+  ) {
+
+    const ownScreenId =
+      getScreenId(
         playerUsername
-      ) {
-
-        try {
-
-          await fetch(
-            `/api/matches/${Number(currentLiveMatchId)}/stream`,
-            {
-
-              method: "POST",
-
-              headers: {
-                "Content-Type":
-                  "application/json"
-              },
-
-              body: JSON.stringify({
-
-                username:
-                  playerUsername,
-
-                streaming:
-                  false
-
-              })
-
-            }
-          );
-
-        }
-
-        catch (error) {
-
-          console.warn(
-            "Could not unregister stream:",
-            error
-          );
-
-        }
-
-      }
-
-    }
+      );
 
 
-    /* =========================================================
-       CHAT
-    ========================================================= */
-
-    async function loadChat() {
-
-      if (!currentLiveMatchId) {
-        return;
-      }
+    const video =
+      document.getElementById(
+        ownScreenId
+      );
 
 
-      try {
-
-        const response =
-          await fetch(
-            `/api/matches/${Number(currentLiveMatchId)}/chat`
-          );
+    const offline =
+      document.getElementById(
+        `${ownScreenId}-offline`
+      );
 
 
-        if (!response.ok) {
-          return;
-        }
-
-
-        const messages =
-          await response.json();
-
-
-        const container =
-          document.getElementById(
-            "chatMessages"
-          );
-
-
-        if (
-          !Array.isArray(messages) ||
-          !messages.length
-        ) {
-
-          container.innerHTML = `
-
-            <div class="empty">
-              No messages yet.<br>
-              Be the first to chat!
-            </div>
-
-          `;
-
-          return;
-
-        }
-
-
-        container.innerHTML =
-          messages
-            .map(message => {
-
-              const time =
-                message.createdAt
-                  ? new Date(
-                      message.createdAt
-                    ).toLocaleTimeString()
-                  : "";
-
-
-              return `
-
-                <div class="chat-message">
-
-                  <strong>
-                    ${escapeHTML(
-                      message.username ||
-                      "Player"
-                    )}
-                  </strong>
-
-                  <small>
-                    ${escapeHTML(time)}
-                  </small>
-
-                  <div style="margin-top:5px;">
-                    ${escapeHTML(
-                      message.message
-                    )}
-                  </div>
-
-                </div>
-
-              `;
-
-            })
-            .join("");
-
-
-        container.scrollTop =
-          container.scrollHeight;
-
-      }
-
-      catch (error) {
-
-        console.error(
-          "Chat error:",
-          error
-        );
-
-      }
-
-    }
-
-
-    function handleChatKey(event) {
+    if (video) {
 
       if (
-        event.key ===
-        "Enter"
+        video.srcObject !==
+        screenStream
       ) {
 
-        event.preventDefault();
-
-        sendChatMessage();
+        video.srcObject =
+          screenStream;
 
       }
+
+
+      video.muted =
+        true;
+
+
+      video.play().catch(
+        () => {}
+      );
 
     }
 
 
-    async function sendChatMessage() {
+    if (offline) {
 
-      if (!currentLiveMatchId) {
-        return;
-      }
+      offline.style.display =
+        "none";
+
+    }
+
+  }
+
+}/* =========================================================
+   SCREEN SHARING
+========================================================= */
+
+async function startScreenShare() {
+
+  /* -------------------------------------------------------
+     CHECK LIVE MATCH
+  ------------------------------------------------------- */
+
+  if (!currentLiveMatchId) {
+
+    alert(
+      "Open a live match first."
+    );
+
+    return;
+
+  }
 
 
-      const username =
-        getUsername();
+  /* -------------------------------------------------------
+     CHECK BROWSER SUPPORT
+  ------------------------------------------------------- */
+
+  if (
+    !navigator.mediaDevices ||
+    !navigator.mediaDevices.getDisplayMedia
+  ) {
+
+    alert(
+      "Screen sharing is not supported by this browser."
+    );
+
+    return;
+
+  }
 
 
-      if (!username) {
-        return;
-      }
+  /* -------------------------------------------------------
+     DO NOT START ANOTHER STREAM
+  ------------------------------------------------------- */
+
+  if (screenStream) {
+
+    alert(
+      "You are already sharing your screen."
+    );
+
+    return;
+
+  }
 
 
-      const input =
-        document.getElementById(
-          "chatText"
-        );
+  const username =
+    getUsername();
 
 
-      const message =
-        input.value.trim();
+  if (!username) {
+
+    alert(
+      "Please enter your GamesArena username."
+    );
+
+    return;
+
+  }
 
 
-      if (!message) {
-        return;
-      }
+  const matchId =
+    Number(
+      currentLiveMatchId
+    );
 
 
-      try {
+  if (
+    !Number.isInteger(matchId) ||
+    matchId <= 0
+  ) {
 
-        const response =
-          await fetch(
-            `/api/matches/${Number(currentLiveMatchId)}/chat`,
-            {
+    alert(
+      "Invalid live match."
+    );
 
-              method: "POST",
+    return;
 
-              headers: {
-                "Content-Type":
-                  "application/json"
-              },
+  }
 
-              body: JSON.stringify({
 
+  try {
+
+    /* -----------------------------------------------------
+       VERIFY MATCH
+    ----------------------------------------------------- */
+
+    const response =
+      await fetch(
+        "/api/matches"
+      );
+
+
+    if (!response.ok) {
+
+      alert(
+        "Could not verify match player."
+      );
+
+      return;
+
+    }
+
+
+    const matches =
+      await response.json();
+
+
+    const match =
+      Array.isArray(matches)
+        ? matches.find(
+            item =>
+              Number(item.id) ===
+              matchId
+          )
+        : null;
+
+
+    if (!match) {
+
+      alert(
+        "Live match not found."
+      );
+
+      return;
+
+    }
+
+
+    /* -----------------------------------------------------
+       VERIFY USER IS A PLAYER
+    ----------------------------------------------------- */
+
+    if (
+      !isCurrentUserMatchPlayer(
+        match
+      )
+    ) {
+
+      alert(
+        "Only players registered in this match can share their screen."
+      );
+
+      return;
+
+    }
+
+
+    /* -----------------------------------------------------
+       VERIFY MATCH IS LIVE
+    ----------------------------------------------------- */
+
+    const status =
+      String(
+        match.status ||
+        ""
+      )
+      .trim()
+      .toUpperCase();
+
+
+    if (
+      status !== "LIVE" &&
+      status !== "STARTED"
+    ) {
+
+      alert(
+        "Screen sharing is only available during a live match."
+      );
+
+      return;
+
+    }
+
+
+    /* -----------------------------------------------------
+       REQUEST SCREEN
+    ----------------------------------------------------- */
+
+    const stream =
+      await navigator
+        .mediaDevices
+        .getDisplayMedia({
+
+          video: true,
+
+          audio: true
+
+        });
+
+
+    if (!stream) {
+
+      return;
+
+    }
+
+
+    /*
+      Save the stream only after getDisplayMedia()
+      succeeds.
+    */
+
+    screenStream =
+      stream;
+
+
+    /* -----------------------------------------------------
+       FIND LOCAL VIDEO
+    ----------------------------------------------------- */
+
+    const screenId =
+      getScreenId(
+        username
+      );
+
+
+    const video =
+      document.getElementById(
+        screenId
+      );
+
+
+    const offline =
+      document.getElementById(
+        `${screenId}-offline`
+      );
+
+
+    /* -----------------------------------------------------
+       ATTACH LOCAL STREAM
+    ----------------------------------------------------- */
+
+    if (video) {
+
+      video.srcObject =
+        screenStream;
+
+      video.muted =
+        true;
+
+      video.autoplay =
+        true;
+
+      video.playsInline =
+        true;
+
+      video.style.display =
+        "block";
+
+
+      video.play().catch(
+        () => {}
+      );
+
+    }
+
+
+    if (offline) {
+
+      offline.style.display =
+        "none";
+
+    }
+
+
+    /* -----------------------------------------------------
+       UPDATE BUTTONS
+    ----------------------------------------------------- */
+
+    const startButton =
+      document.getElementById(
+        "startStreamButton"
+      );
+
+
+    const stopButton =
+      document.getElementById(
+        "stopStreamButton"
+      );
+
+
+    if (startButton) {
+
+      startButton.disabled =
+        true;
+
+    }
+
+
+    if (stopButton) {
+
+      stopButton.disabled =
+        false;
+
+    }
+
+
+    /* -----------------------------------------------------
+       HANDLE BROWSER "STOP SHARING"
+    ----------------------------------------------------- */
+
+    const videoTrack =
+      screenStream.getVideoTracks()[0];
+
+
+    if (videoTrack) {
+
+      videoTrack.addEventListener(
+        "ended",
+        () => {
+
+          /*
+            The browser's own "Stop sharing"
+            button will trigger this event.
+          */
+
+          stopScreenShare();
+
+        },
+        {
+          once: true
+        }
+      );
+
+    }
+
+
+    /* -----------------------------------------------------
+       TELL BACKEND STREAMING HAS STARTED
+    ----------------------------------------------------- */
+
+    try {
+
+      const streamResponse =
+        await fetch(
+          `/api/matches/${matchId}/stream`,
+          {
+
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body: JSON.stringify({
+
+              username:
                 username,
 
-                message
+              streaming:
+                true
 
-              })
+            })
 
-            }
-          );
-
-
-        const data =
-          await response.json();
+          }
+        );
 
 
-        if (!response.ok) {
+      /*
+        The stream itself is NOT uploaded to
+        the backend.
 
-          alert(
-            data.error ||
-            "Could not send message."
-          );
+        This request only tells the server
+        that this player is currently sharing.
+      */
 
-          return;
+      if (!streamResponse.ok) {
 
-        }
-
-
-        input.value = "";
-
-        await loadChat();
-
-      }
-
-      catch (error) {
-
-        console.error(error);
-
-        alert(
-          "Could not connect to chat."
+        console.warn(
+          "Server could not register screen sharing."
         );
 
       }
 
     }
 
+    catch (error) {
 
-    /* =========================================================
+      console.warn(
+        "Stream registration unavailable:",
+        error
+      );
+
+    }
+
+
+    /*
+      Refresh the live match so other players
+      can see that this player is streaming.
+    */
+
+    if (
+      typeof refreshLiveMatch ===
+      "function"
+    ) {
+
+      await refreshLiveMatch();
+
+    }
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "Screen share error:",
+      error
+    );
+
+
+    /*
+      User cancelled the browser
+      screen-selection window.
+    */
+
+    if (
+      error &&
+      (
+        error.name ===
+        "NotAllowedError" ||
+
+        error.name ===
+        "AbortError"
+      )
+    ) {
+
+      return;
+
+    }
+
+
+    /*
+      Clean up if something went wrong.
+    */
+
+    if (screenStream) {
+
+      screenStream
+        .getTracks()
+        .forEach(
+          track =>
+            track.stop()
+        );
+
+    }
+
+
+    screenStream =
+      null;
+
+
+    const startButton =
+      document.getElementById(
+        "startStreamButton"
+      );
+
+
+    const stopButton =
+      document.getElementById(
+        "stopStreamButton"
+      );
+
+
+    if (startButton) {
+
+      startButton.disabled =
+        false;
+
+    }
+
+
+    if (stopButton) {
+
+      stopButton.disabled =
+        true;
+
+    }
+
+
+    alert(
+      "Screen sharing could not start."
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   STOP SCREEN SHARING
+========================================================= */
+
+async function stopScreenShare() {
+
+  /*
+    Save the match ID and username before
+    cleaning anything up.
+  */
+
+  const matchId =
+    currentLiveMatchId
+      ? Number(
+          currentLiveMatchId
+        )
+      : null;
+
+
+  const username =
+    String(
+      playerUsername ||
+      localStorage.getItem(
+        "ffarena_username"
+      ) ||
+      ""
+    )
+    .trim();
+
+
+  /* -------------------------------------------------------
+     STOP LOCAL MEDIA TRACKS
+  ------------------------------------------------------- */
+
+  if (screenStream) {
+
+    screenStream
+      .getTracks()
+      .forEach(
+        track => {
+
+          try {
+
+            track.stop();
+
+          }
+
+          catch (error) {
+
+            console.warn(
+              "Could not stop screen track:",
+              error
+            );
+
+          }
+
+        }
+      );
+
+
+    screenStream =
+      null;
+
+  }
+
+
+  /* -------------------------------------------------------
+     CLEAR LOCAL VIDEO
+  ------------------------------------------------------- */
+
+  if (username) {
+
+    const screenId =
+      getScreenId(
+        username
+      );
+
+
+    const video =
+      document.getElementById(
+        screenId
+      );
+
+
+    const offline =
+      document.getElementById(
+        `${screenId}-offline`
+      );
+
+
+    if (video) {
+
+      video.srcObject =
+        null;
+
+    }
+
+
+    if (offline) {
+
+      offline.style.display =
+        "flex";
+
+    }
+
+  }
+
+
+  /* -------------------------------------------------------
+     RESET BUTTONS
+  ------------------------------------------------------- */
+
+  const startButton =
+    document.getElementById(
+      "startStreamButton"
+    );
+
+
+  const stopButton =
+    document.getElementById(
+      "stopStreamButton"
+    );
+
+
+  if (startButton) {
+
+    startButton.disabled =
+      false;
+
+  }
+
+
+  if (stopButton) {
+
+    stopButton.disabled =
+      true;
+
+  }
+
+
+  /* -------------------------------------------------------
+     TELL BACKEND STREAMING HAS STOPPED
+  ------------------------------------------------------- */
+
+  if (
+    matchId &&
+    Number.isInteger(matchId) &&
+    matchId > 0 &&
+    username
+  ) {
+
+    try {
+
+      const response =
+        await fetch(
+          `/api/matches/${matchId}/stream`,
+          {
+
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body: JSON.stringify({
+
+              username:
+                username,
+
+              streaming:
+                false
+
+            })
+
+          }
+        );
+
+
+      if (!response.ok) {
+
+        console.warn(
+          "Server could not unregister screen sharing."
+        );
+
+      }
+
+    }
+
+    catch (error) {
+
+      console.warn(
+        "Could not unregister stream:",
+        error
+      );
+
+    }
+
+  }
+
+
+  /*
+    Refresh the match so the streaming
+    status disappears for other users.
+  */
+
+  if (
+    currentLiveMatchId &&
+    typeof refreshLiveMatch ===
+    "function"
+  ) {
+
+    await refreshLiveMatch();
+
+  }
+
+}
+
+
+/* =========================================================
+   CHAT
+========================================================= */
+
+async function loadChat() {
+
+  if (!currentLiveMatchId) {
+    return;
+  }
+
+
+  const matchId =
+    Number(
+      currentLiveMatchId
+    );
+
+
+  if (
+    !Number.isInteger(matchId) ||
+    matchId <= 0
+  ) {
+
+    return;
+
+  }
+
+
+  const container =
+    document.getElementById(
+      "chatMessages"
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `/api/matches/${matchId}/chat`
+      );
+
+
+    if (!response.ok) {
+
+      console.warn(
+        "Could not load chat."
+      );
+
+      return;
+
+    }
+
+
+    const messages =
+      await response.json();
+
+
+    /* -----------------------------------------------------
+       EMPTY CHAT
+    ----------------------------------------------------- */
+
+    if (
+      !Array.isArray(messages) ||
+      messages.length === 0
+    ) {
+
+      container.innerHTML = `
+
+        <div class="empty">
+          No messages yet.<br>
+          Be the first to chat!
+        </div>
+
+      `;
+
+      return;
+
+    }
+
+
+    /* -----------------------------------------------------
+       RENDER MESSAGES
+    ----------------------------------------------------- */
+
+    container.innerHTML =
+      messages
+        .map(
+          message => {
+
+            const username =
+              escapeHTML(
+                message.username ||
+                "Player"
+              );
+
+
+            const text =
+              escapeHTML(
+                message.message ||
+                ""
+              );
+
+
+            let time = "";
+
+
+            if (
+              message.createdAt ||
+              message.created_at
+            ) {
+
+              const rawTime =
+                message.createdAt ||
+                message.created_at;
+
+
+              const parsedTime =
+                new Date(
+                  rawTime
+                );
+
+
+              if (
+                !Number.isNaN(
+                  parsedTime.getTime()
+                )
+              ) {
+
+                time =
+                  parsedTime.toLocaleTimeString(
+                    [],
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    }
+                  );
+
+              }
+
+            }
+
+
+            return `
+
+              <div class="chat-message">
+
+                <strong>
+                  ${username}
+                </strong>
+
+                ${
+                  time
+                    ? `
+                      <small>
+                        ${escapeHTML(time)}
+                      </small>
+                    `
+                    : ""
+                }
+
+                <div
+                  style="margin-top:5px;"
+                >
+                  ${text}
+                </div>
+
+              </div>
+
+            `;
+
+          }
+        )
+        .join("");
+
+
+    /* -----------------------------------------------------
+       KEEP CHAT SCROLLED TO BOTTOM
+    ----------------------------------------------------- */
+
+    container.scrollTop =
+      container.scrollHeight;
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "Chat error:",
+      error
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   CHAT ENTER KEY
+========================================================= */
+
+function handleChatKey(event) {
+
+  if (
+    !event ||
+    event.key !==
+    "Enter"
+  ) {
+
+    return;
+
+  }
+
+
+  /*
+    Prevent the Enter key from
+    creating a new line.
+  */
+
+  event.preventDefault();
+
+
+  sendChatMessage();
+
+}
+
+
+/* =========================================================
+   SEND CHAT MESSAGE
+========================================================= */
+
+async function sendChatMessage() {
+
+  if (!currentLiveMatchId) {
+
+    alert(
+      "Open a live match before sending a message."
+    );
+
+    return;
+
+  }
+
+
+  const username =
+    getUsername();
+
+
+  if (!username) {
+
+    return;
+
+  }
+
+
+  const matchId =
+    Number(
+      currentLiveMatchId
+    );
+
+
+  if (
+    !Number.isInteger(matchId) ||
+    matchId <= 0
+  ) {
+
+    alert(
+      "Invalid live match."
+    );
+
+    return;
+
+  }
+
+
+  const input =
+    document.getElementById(
+      "chatText"
+    );
+
+
+  if (!input) {
+
+    console.error(
+      "Chat input element #chatText was not found."
+    );
+
+    return;
+
+  }
+
+
+  const message =
+    input.value.trim();
+
+
+  if (!message) {
+
+    return;
+
+  }
+
+
+  /*
+    Prevent extremely large messages
+    from being sent.
+  */
+
+  if (message.length > 1000) {
+
+    alert(
+      "Message is too long. Please keep it under 1000 characters."
+    );
+
+    return;
+
+  }
+
+
+  /* -------------------------------------------------------
+     TEMPORARILY DISABLE INPUT
+  ------------------------------------------------------- */
+
+  const sendButton =
+    document.getElementById(
+      "sendChatButton"
+    );
+
+
+  input.disabled =
+    true;
+
+
+  if (sendButton) {
+
+    sendButton.disabled =
+      true;
+
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `/api/matches/${matchId}/chat`,
+        {
+
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+
+            username:
+              username,
+
+            message:
+              message
+
+          })
+
+        }
+      );
+
+
+    let data = {};
+
+
+    try {
+
+      data =
+        await response.json();
+
+    }
+
+    catch {
+
+      data = {};
+
+    }
+
+
+    if (!response.ok) {
+
+      alert(
+        data.error ||
+        "Could not send message."
+      );
+
+      return;
+
+    }
+
+
+    /* -----------------------------------------------------
+       CLEAR INPUT
+    ----------------------------------------------------- */
+
+    input.value =
+      "";
+
+
+    /* -----------------------------------------------------
+       RELOAD CHAT
+    ----------------------------------------------------- */
+
+    await loadChat();
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "Send chat error:",
+      error
+    );
+
+    alert(
+      "Could not connect to GamesArena chat."
+    );
+
+  }
+
+  finally {
+
+    input.disabled =
+      false;
+
+
+    if (sendButton) {
+
+      sendButton.disabled =
+        false;
+
+    }
+
+
+    input.focus();
+
+  }
+
+}    /* =========================================================
        RANKINGS
     ========================================================= */
 
     async function loadRankings() {
+
+      const container =
+        document.getElementById(
+          "rankings"
+        );
+
+
+      if (!container) {
+        return;
+      }
+
 
       try {
 
@@ -5719,7 +6982,11 @@ setInterval(
 
 
         if (!response.ok) {
-          return;
+
+          throw new Error(
+            `Rankings request failed: ${response.status}`
+          );
+
         }
 
 
@@ -5727,15 +6994,9 @@ setInterval(
           await response.json();
 
 
-        const container =
-          document.getElementById(
-            "rankings"
-          );
-
-
         if (
           !Array.isArray(players) ||
-          !players.length
+          players.length === 0
         ) {
 
           container.innerHTML = `
@@ -5749,6 +7010,67 @@ setInterval(
           return;
 
         }
+
+
+        /*
+          Sort highest-ranked players first.
+
+          Rating is the primary ranking value.
+          Wins are used as a tie-breaker.
+        */
+
+        const sortedPlayers =
+          [...players].sort(
+            (a, b) => {
+
+              const ratingA =
+                Number(
+                  a.rating ||
+                  0
+                );
+
+
+              const ratingB =
+                Number(
+                  b.rating ||
+                  0
+                );
+
+
+              const winsA =
+                Number(
+                  a.wins ||
+                  0
+                );
+
+
+              const winsB =
+                Number(
+                  b.wins ||
+                  0
+                );
+
+
+              if (
+                ratingB !==
+                ratingA
+              ) {
+
+                return (
+                  ratingB -
+                  ratingA
+                );
+
+              }
+
+
+              return (
+                winsB -
+                winsA
+              );
+
+            }
+          );
 
 
         container.innerHTML = `
@@ -5781,70 +7103,100 @@ setInterval(
 
 
           ${
-            players
+            sortedPlayers
               .map(
-                (player, index) => `
+                (player, index) => {
 
-                  <div class="rank-row">
+                  const username =
+                    escapeHTML(
+                      player.username ||
+                      "Player"
+                    );
 
-                    <div class="rank-number">
-                      #${index + 1}
+
+                  const rank =
+                    player.rank
+                      ? escapeHTML(
+                          String(
+                            player.rank
+                          )
+                        )
+                      : "";
+
+
+                  const wins =
+                    Number(
+                      player.wins ||
+                      0
+                    );
+
+
+                  const rating =
+                    Number(
+                      player.rating ||
+                      0
+                    );
+
+
+                  const coins =
+                    Number(
+                      player.coins ||
+                      0
+                    );
+
+
+                  return `
+
+                    <div class="rank-row">
+
+                      <div class="rank-number">
+                        #${index + 1}
+                      </div>
+
+
+                      <div class="rank-name">
+
+                        ${username}
+
+                        ${
+                          rank
+                            ? `
+
+                              <small
+                                style="color:#ffb000;"
+                              >
+                                • ${rank}
+                              </small>
+
+                            `
+                            : ""
+                        }
+
+                      </div>
+
+
+                      <div class="rank-stat">
+                        ${wins.toLocaleString()}
+                      </div>
+
+
+                      <div class="rank-stat">
+                        ${rating.toLocaleString()}
+                      </div>
+
+
+                      <div
+                        class="rank-stat rank-hide-mobile"
+                      >
+                        🪙
+                        ${coins.toLocaleString()}
+                      </div>
+
                     </div>
 
+                  `;
 
-                    <div class="rank-name">
-
-                      ${escapeHTML(
-                        player.username ||
-                        "Player"
-                      )}
-
-                      ${
-                        player.rank
-                          ? `
-
-                            <small
-                              style="color:#ffb000;"
-                            >
-                              •
-                              ${escapeHTML(
-                                player.rank
-                              )}
-                            </small>
-
-                          `
-                          : ""
-                      }
-
-                    </div>
-
-
-                    <div class="rank-stat">
-                      ${Number(
-                        player.wins || 0
-                      )}
-                    </div>
-
-
-                    <div class="rank-stat">
-                      ${Number(
-                        player.rating || 0
-                      )}
-                    </div>
-
-
-                    <div
-                      class="rank-stat rank-hide-mobile"
-                    >
-                      🪙
-                      ${Number(
-                        player.coins || 0
-                      ).toLocaleString()}
-                    </div>
-
-                  </div>
-
-                `
+                }
               )
               .join("")
           }
@@ -5859,6 +7211,15 @@ setInterval(
           "Ranking error:",
           error
         );
+
+
+        container.innerHTML = `
+
+          <div class="empty">
+            Could not load rankings.
+          </div>
+
+        `;
 
       }
 
@@ -5877,36 +7238,24 @@ setInterval(
         );
 
 
+      if (!input) {
+        return;
+      }
+
+
       const query =
-        (
-          input?.value ||
+        String(
+          input.value ||
           ""
         )
         .trim()
         .toLowerCase();
 
 
-      if (!query) {
-
-        document
-          .querySelectorAll(
-            "#matches .match-card"
-          )
-          .forEach(
-            card =>
-              card.style.display = ""
-          );
-
-        return;
-
-      }
-
-
-      const matchesSection =
-        document.getElementById(
-          "matches"
-        );
-
+      /*
+        If the search box is empty,
+        show all match cards again.
+      */
 
       const cards =
         [
@@ -5916,36 +7265,79 @@ setInterval(
         ];
 
 
+      if (!query) {
+
+        cards.forEach(
+          card => {
+
+            card.style.display =
+              "";
+
+          }
+        );
+
+        return;
+
+      }
+
+
       /*
-        First search existing match cards.
+        Search the match cards first.
       */
 
       const matchingCards =
         cards.filter(
           card =>
-            card.textContent
-              .toLowerCase()
-              .includes(query)
+            String(
+              card.textContent ||
+              ""
+            )
+            .toLowerCase()
+            .includes(query)
         );
 
 
-      if (matchingCards.length) {
+      if (
+        matchingCards.length >
+        0
+      ) {
 
-        cards.forEach(card => {
+        cards.forEach(
+          card => {
 
-          card.style.display =
-            card.textContent
-              .toLowerCase()
-              .includes(query)
-              ? ""
-              : "none";
-
-        });
+            const text =
+              String(
+                card.textContent ||
+                ""
+              )
+              .toLowerCase();
 
 
-        matchesSection.scrollIntoView({
-          behavior: "smooth"
-        });
+            card.style.display =
+              text.includes(query)
+                ? ""
+                : "none";
+
+          }
+        );
+
+
+        const matchesSection =
+          document.getElementById(
+            "matches"
+          );
+
+
+        if (matchesSection) {
+
+          matchesSection.scrollIntoView({
+            behavior:
+              "smooth",
+            block:
+              "start"
+          });
+
+        }
 
 
         return;
@@ -5954,12 +7346,14 @@ setInterval(
 
 
       /*
-        If nothing matches locally,
-        send the search to the Players page.
+        If no match is found on the
+        home page, search players.
       */
 
       window.location.href =
-        `players.html?search=${encodeURIComponent(query)}`;
+        `players.html?search=${encodeURIComponent(
+          query
+        )}`;
 
     }
 
@@ -5992,6 +7386,31 @@ setInterval(
       }
 
 
+      /*
+        Prevent duplicate event listeners
+        if this function is called again.
+      */
+
+      if (
+        mobileMenuBtn.dataset.navReady ===
+        "true"
+      ) {
+
+        return;
+
+      }
+
+
+      mobileMenuBtn.dataset.navReady =
+        "true";
+
+
+      mobileMenuBtn.setAttribute(
+        "aria-expanded",
+        "false"
+      );
+
+
       mobileMenuBtn.addEventListener(
         "click",
         () => {
@@ -6010,7 +7429,9 @@ setInterval(
 
           mobileMenuBtn.setAttribute(
             "aria-expanded",
-            String(opened)
+            String(
+              opened
+            )
           );
 
         }
@@ -6019,28 +7440,32 @@ setInterval(
 
       navbarLinks
         .querySelectorAll("a")
-        .forEach(link => {
+        .forEach(
+          link => {
 
-          link.addEventListener(
-            "click",
-            () => {
+            link.addEventListener(
+              "click",
+              () => {
 
-              navbarLinks.classList.remove(
-                "show"
-              );
+                navbarLinks.classList.remove(
+                  "show"
+                );
 
-              mobileMenuBtn.textContent =
-                "☰";
 
-              mobileMenuBtn.setAttribute(
-                "aria-expanded",
-                "false"
-              );
+                mobileMenuBtn.textContent =
+                  "☰";
 
-            }
-          );
 
-        });
+                mobileMenuBtn.setAttribute(
+                  "aria-expanded",
+                  "false"
+                );
+
+              }
+            );
+
+          }
+        );
 
     }
 
@@ -6054,63 +7479,107 @@ setInterval(
       event => {
 
         const modalIds = [
+
           "matchModal",
+
           "teamModal",
+
           "lobbyModal",
+
           "liveModal"
+
         ];
 
 
-        modalIds.forEach(id => {
+        modalIds.forEach(
+          id => {
 
-          const modal =
-            document.getElementById(id);
+            const modal =
+              document.getElementById(
+                id
+              );
 
 
-          if (
-            event.target ===
-            modal
-          ) {
+            if (
+              !modal ||
+              event.target !==
+              modal
+            ) {
+
+              return;
+
+            }
+
 
             if (
               id ===
               "matchModal"
             ) {
 
-              closeCreateMatch();
+              if (
+                typeof closeCreateMatch ===
+                "function"
+              ) {
+
+                closeCreateMatch();
+
+              }
 
             }
+
 
             else if (
               id ===
               "teamModal"
             ) {
 
-              closeCreateTeam();
+              if (
+                typeof closeCreateTeam ===
+                "function"
+              ) {
+
+                closeCreateTeam();
+
+              }
 
             }
+
 
             else if (
               id ===
               "lobbyModal"
             ) {
 
-              closeLobby();
+              if (
+                typeof closeLobby ===
+                "function"
+              ) {
+
+                closeLobby();
+
+              }
 
             }
+
 
             else if (
               id ===
               "liveModal"
             ) {
 
-              closeLive();
+              if (
+                typeof closeLive ===
+                "function"
+              ) {
+
+                closeLive();
+
+              }
 
             }
 
           }
-
-        });
+        );
 
       }
     );
@@ -6134,13 +7603,125 @@ setInterval(
         }
 
 
-        closeCreateMatch();
+        /*
+          Close only modals that are
+          currently open.
+        */
 
-        closeCreateTeam();
+        const matchModal =
+          document.getElementById(
+            "matchModal"
+          );
 
-        closeLobby();
 
-        closeLive();
+        const teamModal =
+          document.getElementById(
+            "teamModal"
+          );
+
+
+        const lobbyModal =
+          document.getElementById(
+            "lobbyModal"
+          );
+
+
+        const liveModal =
+          document.getElementById(
+            "liveModal"
+          );
+
+
+        if (
+          matchModal &&
+          (
+            matchModal.classList.contains(
+              "show"
+            ) ||
+            matchModal.style.display ===
+              "flex"
+          )
+        ) {
+
+          if (
+            typeof closeCreateMatch ===
+            "function"
+          ) {
+
+            closeCreateMatch();
+
+          }
+
+        }
+
+
+        if (
+          teamModal &&
+          (
+            teamModal.classList.contains(
+              "show"
+            ) ||
+            teamModal.style.display ===
+              "flex"
+          )
+        ) {
+
+          if (
+            typeof closeCreateTeam ===
+            "function"
+          ) {
+
+            closeCreateTeam();
+
+          }
+
+        }
+
+
+        if (
+          lobbyModal &&
+          (
+            lobbyModal.classList.contains(
+              "show"
+            ) ||
+            lobbyModal.style.display ===
+              "flex"
+          )
+        ) {
+
+          if (
+            typeof closeLobby ===
+            "function"
+          ) {
+
+            closeLobby();
+
+          }
+
+        }
+
+
+        if (
+          liveModal &&
+          (
+            liveModal.classList.contains(
+              "show"
+            ) ||
+            liveModal.style.display ===
+              "flex"
+          )
+        ) {
+
+          if (
+            typeof closeLive ===
+            "function"
+          ) {
+
+            closeLive();
+
+          }
+
+        }
 
       }
     );
@@ -6150,27 +7731,56 @@ setInterval(
        SEARCH ENTER KEY
     ========================================================= */
 
-    document
-      .getElementById(
-        "homeSearch"
-      )
-      ?.addEventListener(
+    function setupHomeSearch() {
+
+      const input =
+        document.getElementById(
+          "homeSearch"
+        );
+
+
+      if (!input) {
+        return;
+      }
+
+
+      if (
+        input.dataset.searchReady ===
+        "true"
+      ) {
+
+        return;
+
+      }
+
+
+      input.dataset.searchReady =
+        "true";
+
+
+      input.addEventListener(
         "keydown",
         event => {
 
           if (
-            event.key ===
+            event.key !==
             "Enter"
           ) {
 
-            event.preventDefault();
-
-            runHomeSearch();
+            return;
 
           }
 
+
+          event.preventDefault();
+
+
+          runHomeSearch();
+
         }
       );
+
+    }
 
 
     /* =========================================================
@@ -6181,52 +7791,167 @@ setInterval(
       "DOMContentLoaded",
       () => {
 
-        updateUsernameInputs();
+        /*
+          Restore the saved GamesArena username.
+        */
+
+        if (
+          typeof getUsername ===
+          "function"
+        ) {
+
+          const savedUsername =
+            localStorage.getItem(
+              "ffarena_username"
+            );
+
+
+          if (savedUsername) {
+
+            playerUsername =
+              savedUsername.trim();
+
+          }
+
+        }
+
+
+        /* -----------------------------------------------------
+           USERNAME INPUTS
+        ----------------------------------------------------- */
+
+        if (
+          typeof updateUsernameInputs ===
+          "function"
+        ) {
+
+          updateUsernameInputs();
+
+        }
+
+
+        /* -----------------------------------------------------
+           MOBILE NAVBAR
+        ----------------------------------------------------- */
 
         setupMobileNavbar();
 
-        loadTeams();
 
-        loadMatches();
+        /* -----------------------------------------------------
+           HOME SEARCH
+        ----------------------------------------------------- */
+
+        setupHomeSearch();
+
+
+        /* -----------------------------------------------------
+           LOAD TEAMS
+        ----------------------------------------------------- */
+
+        if (
+          typeof loadTeams ===
+          "function"
+        ) {
+
+          loadTeams();
+
+        }
+
+
+        /* -----------------------------------------------------
+           LOAD MATCHES
+        ----------------------------------------------------- */
+
+        if (
+          typeof loadMatches ===
+          "function"
+        ) {
+
+          loadMatches();
+
+        }
+
+
+        /* -----------------------------------------------------
+           LOAD RANKINGS
+        ----------------------------------------------------- */
 
         loadRankings();
 
-        loadPlayerProfile();
+
+        /* -----------------------------------------------------
+           PLAYER PROFILE
+        ----------------------------------------------------- */
+
+        if (
+          typeof loadPlayerProfile ===
+          "function"
+        ) {
+
+          loadPlayerProfile();
+
+        }
 
 
-        /*
-          Refresh dashboard data every 10 seconds.
-        */
+        /* -----------------------------------------------------
+           DASHBOARD REFRESH
+        ----------------------------------------------------- */
 
         setInterval(
           () => {
 
-            loadMatches();
+            if (
+              typeof loadMatches ===
+              "function"
+            ) {
+
+              loadMatches();
+
+            }
+
 
             loadRankings();
 
-            loadPlayerProfile();
+
+            if (
+              typeof loadPlayerProfile ===
+              "function"
+            ) {
+
+              loadPlayerProfile();
+
+            }
 
           },
           10000
         );
 
 
-        /*
-          Match countdown.
-        */
+        /* -----------------------------------------------------
+           MATCH COUNTDOWN
+        ----------------------------------------------------- */
 
-        setInterval(
-          updateMatchCountdowns,
-          1000
-        );
+        if (
+          typeof updateMatchCountdowns ===
+          "function"
+        ) {
+
+          updateMatchCountdowns();
+
+
+          setInterval(
+            updateMatchCountdowns,
+            1000
+          );
+
+        }
 
       }
     );
 
 
     /* =========================================================
-       LOADER
+       GAMESARENA OPENING LOADER
     ========================================================= */
 
     window.addEventListener(
@@ -6239,26 +7964,55 @@ setInterval(
           );
 
 
+        if (!loader) {
+          return;
+        }
+
+
         /*
-          Shorter modern loading animation.
-          It no longer blocks the site for 10 seconds.
+          GamesArena opening loader.
+
+          The loader stays visible for
+          10 seconds as requested.
         */
 
         setTimeout(
           () => {
 
-            loader?.classList.add(
+            loader.classList.add(
               "is-hidden"
             );
 
+
+            /*
+              Remove it from interaction
+              after the animation.
+            */
+
+            setTimeout(
+              () => {
+
+                if (
+                  loader &&
+                  loader.parentNode
+                ) {
+
+                  loader.style.display =
+                    "none";
+
+                }
+
+              },
+              800
+            );
+
           },
-          1200
+          10000
         );
 
       }
     );
-
-  </script>
+     </script>
 
 </body>
 </html>
